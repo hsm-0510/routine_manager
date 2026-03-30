@@ -12,11 +12,11 @@ def send_data(sock):
         payload = {
             "outputs": {
                 "control_entranceLB": 1,
-                "control_exitLB": 0
+                "control_exitLB": 1
             },
             "status": {
                 "vehicle_alignment_status": 1,
-                "driver_absence_status": 0
+                "driver_absence_status": 1
             }
         }
     
