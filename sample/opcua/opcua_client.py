@@ -37,10 +37,17 @@ class PSOWeighbridgeClient:
         return self.root.get_child(path)
 
     def read_tag(self, category_name, tag_name):
-        node = self.get_tag_node(category_name, tag_name)
-        value = node.get_value()
-        print(f"READ  {category_name}.{tag_name} = {value}")
-        return value
+        try:
+            node = self.get_tag_node(category_name, tag_name)
+            value = node.get_value()
+            if int(value) >= 0:
+                value = value
+            else:
+                value = 0
+            print(f"READ  {category_name}.{tag_name} = {value}")
+            return value
+        except ValueError:
+            return 0
 
     def write_tag(self, category_name, tag_name, value, variant_type=None):
         node = self.get_tag_node(category_name, tag_name)
