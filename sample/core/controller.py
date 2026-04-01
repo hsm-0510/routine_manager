@@ -3,8 +3,8 @@ from sample.serialInterface import commands
 from sample.serialInterface import parser
 from sample.serialInterface import serial_client
 from sample.utils import config_loader
-from sample.opcua import client
-from sample.opcua import updater
+from sample.opcua import opcua_client
+from sample.opcua import opcua_update
 
 def routine1():
     totalActiveDevices, dev1_status, dev2_status = serial_client.checkActiveDevices()

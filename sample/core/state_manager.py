@@ -1,13 +1,6 @@
 from sample.utils import config_loader
 
-# Commands dictionary (hex -> bytes)
-commands = {
-    "handshake": bytes.fromhex("02 41 41 30 30 03"),
-    "gross_weight": bytes.fromhex("02 41 42 30 33 03"),
-    "tare_weight": bytes.fromhex("02 41 43 30 32 03"),
-    "net_weight": bytes.fromhex("02 41 44 30 35 03")
-}
-# Settings and Response of Device 1
+# Settings and Response of Loadcell Indicator Device 1
 response_device_1 = {
     "deviceName": config_loader.serial_config_load("deviceName", 0),
     "isActive:": config_loader.serial_config_load("isActive", 0),
@@ -26,7 +19,7 @@ response_device_1 = {
     "xorCheck2": "0"
 }
 
-# Settings and Response of Device 2
+# Settings and Response of Loadcell Indicator Device 2
 response_device_2 = {
     "deviceName": config_loader.serial_config_load("deviceName", 1),
     "isActive:": config_loader.serial_config_load("isActive", 1),
@@ -44,3 +37,7 @@ response_device_2 = {
     "xorCheck1": "0",
     "xorCheck2": "0"
 }
+
+# TCP Payload of Waveshare Module
+# Any changes made to tcp_payload.json must be reflected in the waveshare firmware as well
+tcp_payload = config_loader.tcp_payload_config_load()

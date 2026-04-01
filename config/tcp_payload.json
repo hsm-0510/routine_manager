@@ -1,0 +1,30 @@
+{
+    "inputs": {
+        "entranceLB_status": 0,
+        "exitLB_status": 0,
+        "irSens01_entranceLB": 0,
+        "irSens02_entranceLB": 0,
+        "irSens03_entranceLB": 0,
+        "irSens01_exitLB": 0,
+        "irSens02_exitLB": 0,
+        "irSens03_exitLB": 0
+    },
+    "outputs": {
+        "control_entranceLB": 0,
+        "control_exitLB": 0
+    },
+    "status": {
+        "vehicle_alignment_status": 0,
+        "driver_absence_status": 0,
+        "gross_weight_WB1": 0,
+        "gross_weight_WB2": 0,
+        "weight_capture_control1": 0,
+        "Weight_capture_control2": 0,
+        "scan_status_rfid1": 0,
+        "scan_status_rfid2": 0,
+        "print_control_entrance": 0,
+        "print_control_exit": 0,
+        "kiosk_button_entrance": 0,
+        "kiosk_button_exit": 0
+    }
+}

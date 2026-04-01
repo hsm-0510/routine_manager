@@ -21,19 +21,24 @@ def disconnect_serial(ser):
         print("Could Not Close Serial Port")
 
 def send_command(ser, cmd):
-    # print(f"Sending: {cmd.hex(' ')}")
-    ser.write(cmd)
-    time.sleep(0.2)
-    response = ser.read_all()
-    # print(f"Received (hex):", response)
-    return response
+    try:
+        # print(f"Sending: {cmd.hex(' ')}")
+        ser.write(cmd)
+        time.sleep(0.2)
+        response = ser.read_all()
+        # print(f"Received (hex):", response)
+        return response
+    except Exception as e:
+        print(f"Could not send command: {cmd} to {ser}, error: {e}")
 
 def checkActiveDevices():
+    # Load active_status, port and baudrate of indicator 1:
     dev1 = config_loader.serial_config_load("isActive", 0)
-    dev2 = config_loader.serial_config_load("isActive", 1)
     port1 = config_loader.serial_config_load("comPort", 0)
     baudrate1 = config_loader.serial_config_load("baudrate", 0)
     timeout1 = config_loader.serial_config_load("timeout", 0)
+    # Load active_status, port an baudrate of indicator 2:
+    dev2 = config_loader.serial_config_load("isActive", 1)
     port2 = config_loader.serial_config_load("comPort", 1)
     baudrate2 = config_loader.serial_config_load("baudrate", 1)
     timeout2 = config_loader.serial_config_load("timeout", 1)

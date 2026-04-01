@@ -1,0 +1,40 @@
+{
+    "serial_device":[
+        {
+            "deviceName": "Entrance_XK3190_DS8",
+            "isActive": 1,
+            "deviceID": "A",
+            "comPort": "COM5",
+            "baudrate": 9600,
+            "timeout": 1,
+            "pollingInterval": 1
+        },
+        {
+            "deviceName": "Exit_XK3190_DS8",
+            "isActive": 1,
+            "deviceID": "A",
+            "comPort": "COM8",
+            "baudrate": 9600,
+            "timeout": 1,
+            "pollingInterval": 1
+        }
+    ],
+    "waveshare_device": [
+        {
+            "deviceName": "Waveshare_ESP32_S3",
+            "isActive": 1,
+            "serverIp": "192.168.10.60",
+            "serverPort": 80,
+            "updateInterval": 1
+        }
+    ],
+    "opc_server": [
+        {
+            "endpoint": "opc.tcp://127.0.0.1:5501/pso/weighbridge/",
+            "serverIp": "127.0.0.1",
+            "serverPort": 5501,
+            "namespaceUri": "urn:pso:smart-weighbridge",
+            "serverObjectName": "PSO Smart Weighbridge"
+        }
+    ]
+}
