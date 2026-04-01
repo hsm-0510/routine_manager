@@ -11,8 +11,6 @@ from sample.core import controller
 def main():
     # Keep main thread alive
     try:
-        # Establish OPC Connection as Client
-        opc.connect()
         while True: # TCP/OPCUA Data-transfer
             # Update Time
             time.sleep(1)
@@ -25,6 +23,33 @@ def main():
             #               "gross_weight_WB2",
             #               str(tcp_client.get_payload_value(state_manager.tcp_payload, "gross_weight_WB2")))
             
+            # Update OPCUA Waveshare Digital Inputs Status
+            opc.write_tag("Waveshare_Monitoring",
+                            "irSens_01_entranceLB",
+                            str(tcp_client.get_payload_value(state_manager.tcp_payload, "irSens_01_entranceLB")))
+            opc.write_tag("Waveshare_Monitoring",
+                            "irSens_02_entranceLB",
+                            str(tcp_client.get_payload_value(state_manager.tcp_payload, "irSens_02_entranceLB")))
+            opc.write_tag("Waveshare_Monitoring",
+                            "irSens_03_entranceLB",
+                            str(tcp_client.get_payload_value(state_manager.tcp_payload, "irSens_03_entranceLB")))
+            opc.write_tag("Waveshare_Monitoring",
+                            "irSens_01_exitLB",
+                            str(tcp_client.get_payload_value(state_manager.tcp_payload, "irSens_01_exitLB")))
+            opc.write_tag("Waveshare_Monitoring",
+                            "irSens_02_exitLB",
+                            str(tcp_client.get_payload_value(state_manager.tcp_payload, "irSens_02_exitLB")))
+            opc.write_tag("Waveshare_Monitoring",
+                            "irSens_03_exitLB",
+                            str(tcp_client.get_payload_value(state_manager.tcp_payload, "irSens_03_exitLB")))
+            opc.write_tag("Waveshare_Monitoring",
+                            "entranceLB_status",
+                            str(tcp_client.get_payload_value(state_manager.tcp_payload, "entranceLB_status")))
+            opc.write_tag("Waveshare_Monitoring",
+                            "exitLB_status",
+                            str(tcp_client.get_payload_value(state_manager.tcp_payload, "exitLB_status")))
+            
+            
             # Update TCP_Payload (WAVESHARE RELAY OUTPUTS)
             tcp_client.update_payload(state_manager.tcp_payload,
                                       "control_entranceLB",
@@ -32,6 +57,24 @@ def main():
             tcp_client.update_payload(state_manager.tcp_payload,
                                       "control_exitLB",
                                       int(opc.read_tag("Waveshare_Controlling", "control_exitLB")))
+            tcp_client.update_payload(state_manager.tcp_payload,
+                                      "channel_3",
+                                      int(opc.read_tag("Waveshare_Controlling", "channel_3")))
+            tcp_client.update_payload(state_manager.tcp_payload,
+                                      "channel_4",
+                                      int(opc.read_tag("Waveshare_Controlling", "channel_4")))
+            tcp_client.update_payload(state_manager.tcp_payload,
+                                      "channel_5",
+                                      int(opc.read_tag("Waveshare_Controlling", "channel_5")))
+            tcp_client.update_payload(state_manager.tcp_payload,
+                                      "channel_6",
+                                      int(opc.read_tag("Waveshare_Controlling", "channel_6")))
+            tcp_client.update_payload(state_manager.tcp_payload,
+                                      "channel_7",
+                                      int(opc.read_tag("Waveshare_Controlling", "channel_7")))
+            tcp_client.update_payload(state_manager.tcp_payload,
+                                      "channel_8",
+                                      int(opc.read_tag("Waveshare_Controlling", "channel_8")))
             
             # Update TCP_Payload (WAVESHARE STATUSES)
             tcp_client.update_payload(state_manager.tcp_payload,
@@ -94,12 +137,15 @@ if __name__ == "__main__":
         server_object_name=config_loader.opc_config_load("serverObjectName", 0)
     )
     
+    # Establish OPC Connection as Client
+    opc.connect()
+    
     # Establish TCP Socket Connection
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_client.connect_tcp_socket(sock, tcp_client.SERVER_IP, tcp_client.SERVER_PORT)
     
     # Serial Data-in Thread
-    threading.Thread(target=controller.routine1(opc), daemon=True).start()
+    threading.Thread(target=controller.routine1, args=(opc,), daemon=True).start()
     
     # TCP send & receive threads
     threading.Thread(target=tcp_client.send_data, args=(sock, state_manager.tcp_payload,), daemon=True).start()

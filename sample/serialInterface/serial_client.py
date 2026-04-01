@@ -24,7 +24,7 @@ def send_command(ser, cmd):
     try:
         # print(f"Sending: {cmd.hex(' ')}")
         ser.write(cmd)
-        time.sleep(0.2)
+        time.sleep(0.1)
         response = ser.read_all()
         # print(f"Received (hex):", response)
         return response
