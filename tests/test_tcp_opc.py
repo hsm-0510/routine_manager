@@ -15,13 +15,52 @@ def main():
             # Update Time
             time.sleep(1)
             
-            # # Write OPC Tags
-            # opc.write_tag("Entrance_XK3190_DS8",
-            #               "gross_weight_WB1",
-            #               str(tcp_client.get_payload_value(state_manager.tcp_payload, "gross_weight_WB1")))
-            # opc.write_tag("Exit_XK3190_DS8",
-            #               "gross_weight_WB2",
-            #               str(tcp_client.get_payload_value(state_manager.tcp_payload, "gross_weight_WB2")))
+            # Update System Configurations Entrance Weigh Bridge
+            opc.write_tag("Entrance_XK3190_DS8",
+                          "deviceName_entranceWB1",
+                          str(state_manager.state_manager_inquire("deviceName", 0)))
+            opc.write_tag("Entrance_XK3190_DS8",
+                          "isActive_entranceWB1",
+                          str(state_manager.state_manager_inquire("isActive", 0)))
+            opc.write_tag("Entrance_XK3190_DS8",
+                          "deviceID_entranceWB1",
+                          str(state_manager.state_manager_inquire("deviceID", 0)))
+            opc.write_tag("Entrance_XK3190_DS8",
+                          "comPort_entranceWB1",
+                          str(state_manager.state_manager_inquire("comPort", 0)))
+            opc.write_tag("Entrance_XK3190_DS8",
+                          "baudrate_entranceWB1",
+                          str(state_manager.state_manager_inquire("baudrate", 0)))
+            opc.write_tag("Entrance_XK3190_DS8",
+                          "timeout_entranceWB1",
+                          str(state_manager.state_manager_inquire("timeout", 0)))
+            opc.write_tag("Entrance_XK3190_DS8",
+                          "pollingInterval_entranceWB1",
+                          str(state_manager.state_manager_inquire("pollingInterval", 0)))
+            
+            # Update System Configurations Entrance Weigh Bridge
+            opc.write_tag("Exit_XK3190_DS8",
+                          "deviceName_exitWB2",
+                          str(state_manager.state_manager_inquire("deviceName", 1)))
+            opc.write_tag("Exit_XK3190_DS8",
+                          "isActive_exitWB2",
+                          str(state_manager.state_manager_inquire("isActive", 1)))
+            opc.write_tag("Exit_XK3190_DS8",
+                          "deviceID_exitWB2",
+                          str(state_manager.state_manager_inquire("deviceID", 1)))
+            opc.write_tag("Exit_XK3190_DS8",
+                          "comPort_exitWB2",
+                          str(state_manager.state_manager_inquire("comPort", 1)))
+            opc.write_tag("Exit_XK3190_DS8",
+                          "baudrate_exitWB2",
+                          str(state_manager.state_manager_inquire("baudrate", 1)))
+            opc.write_tag("Exit_XK3190_DS8",
+                          "timeout_exitWB2",
+                          str(state_manager.state_manager_inquire("timeout", 1)))
+            opc.write_tag("Exit_XK3190_DS8",
+                          "pollingInterval_exitWB2",
+                          str(state_manager.state_manager_inquire("pollingInterval", 1)))
+            
             
             # Update OPCUA Waveshare Digital Inputs Status
             opc.write_tag("Waveshare_Monitoring",

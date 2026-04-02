@@ -66,3 +66,21 @@ def tcp_payload_config_load():
         return f"Error: File not found at {file_path}"
     except (IndexError, AttributeError):
         return "Error: Unexpected JSON format."
+
+def system_config_load():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(script_dir, '..', '..', 'config/system_config.json')
+    try:
+        with open(file_path, 'r') as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return f"Error: File not found at {file_path}"
+    except (IndexError, AttributeError):
+        return "Error: Unexpected JSON format."
+    
+def update_config(config, key, value):
+    for section in config:  # system config dictionary
+        if key in config[section]:
+            config[section][key] = value
+            return True  # update successful
+    return False  # key not found
