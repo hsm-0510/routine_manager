@@ -114,6 +114,6 @@ def scheduler2(opc, port1, baudrate1, timeout1, port2, baudrate2, timeout2):
                 commands.response_device_1["decimalPoints"])} kg, Gross Weight Device 2: {parser.parse_grossWeight(responseB2,
                 commands.response_device_2["signBit"], commands.response_device_2["decimalPoints"])} kg")
             # Loop Delay
-            time.sleep(0.2)
+            time.sleep(1)
         except Exception as e:
             print(f"[SCHEDULER 2 ERROR: {e}]")

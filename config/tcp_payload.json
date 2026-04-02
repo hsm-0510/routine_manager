@@ -2,12 +2,12 @@
     "inputs": {
         "entranceLB_status": 0,
         "exitLB_status": 0,
-        "irSens01_entranceLB": 0,
-        "irSens02_entranceLB": 0,
-        "irSens03_entranceLB": 0,
-        "irSens01_exitLB": 0,
-        "irSens02_exitLB": 0,
-        "irSens03_exitLB": 0
+        "irSens_01_entranceLB": 0,
+        "irSens_02_entranceLB": 0,
+        "irSens_03_entranceLB": 0,
+        "irSens_01_exitLB": 0,
+        "irSens_02_exitLB": 0,
+        "irSens_03_exitLB": 0
     },
     "outputs": {
         "control_entranceLB": 0,
