@@ -30,8 +30,8 @@ def update_opc_elements(opc):
     for section in state_manager.tcp_payload:
         for key in state_manager.tcp_payload["inputs"]:
             opc.write_tag("Waveshare_Monitoring",
-                          key,
-                          str(tcp_client.get_payload_value(state_manager.tcp_payload, key)))
+                        key,
+                        str(tcp_client.get_payload_value(state_manager.tcp_payload, key)))
     
     # Update TCP_Payload (WAVESHARE RELAY OUTPUTS)
     for section in state_manager.tcp_payload:
@@ -73,52 +73,52 @@ def update_opc_elements(opc):
                                 int(opc.read_tag("KIOSK", "kiosk_button_exit")))
     
     # UPDATE MISC TAGS OF STATUS MANAGER:
-    state_manager.state_manager_update(state_manager.misc_tags,
+    state_manager.state_manager_update("KIOSK",
                                        "kiosk_print_control_entrance",
                                        opc.read_tag("KIOSK", "kiosk_print_control_entrance"))
-    state_manager.state_manager_update(state_manager.misc_tags,
+    state_manager.state_manager_update("KIOSK",
                                        "kiosk_print_control_exit",
                                        opc.read_tag("KIOSK", "kiosk_print_control_exit"))
-    state_manager.state_manager_update(state_manager.misc_tags,
+    state_manager.state_manager_update("KIOSK",
                                        "kiosk_button_entrance",
                                        opc.read_tag("KIOSK", "kiosk_button_entrance"))
-    state_manager.state_manager_update(state_manager.misc_tags,
+    state_manager.state_manager_update("KIOSK",
                                        "kiosk_button_exit",
                                        opc.read_tag("KIOSK", "kiosk_button_exit"))
-    state_manager.state_manager_update(state_manager.misc_tags,
+    state_manager.state_manager_update("KIOSK",
                                        "cardData_entrance",
                                        opc.read_tag("KIOSK", "cardData_entrance"))
-    state_manager.state_manager_update(state_manager.misc_tags,
+    state_manager.state_manager_update("KIOSK",
                                        "cardData_exit",
                                        opc.read_tag("KIOSK", "cardData_exit"))
-    state_manager.state_manager_update(state_manager.misc_tags,
+    state_manager.state_manager_update("KIOSK",
                                        "receiptData_1",
                                        opc.read_tag("KIOSK", "receiptData_1"))
-    state_manager.state_manager_update(state_manager.misc_tags,
+    state_manager.state_manager_update("KIOSK",
                                        "receiptData_2",
                                        opc.read_tag("KIOSK", "receiptData_2"))
-    state_manager.state_manager_update(state_manager.misc_tags,
+    state_manager.state_manager_update("KIOSK",
                                        "receiptData_3",
                                        opc.read_tag("KIOSK", "receiptData_3"))
-    state_manager.state_manager_update(state_manager.misc_tags,
+    state_manager.state_manager_update("KIOSK",
                                        "receiptData_4",
                                        opc.read_tag("KIOSK", "receiptData_4"))
-    state_manager.state_manager_update(state_manager.misc_tags,
+    state_manager.state_manager_update("KIOSK",
                                        "receiptData_5",
                                        opc.read_tag("KIOSK", "receiptData_5"))
-    state_manager.state_manager_update(state_manager.misc_tags,
+    state_manager.state_manager_update("KIOSK",
                                        "receiptData_6",
                                        opc.read_tag("KIOSK", "receiptData_6"))
-    state_manager.state_manager_update(state_manager.misc_tags,
+    state_manager.state_manager_update("RFID_Scanner",
                                        "dataRFID_Entrance",
                                        opc.read_tag("RFID_Scanner", "dataRFID_Entrance"))
-    state_manager.state_manager_update(state_manager.misc_tags,
+    state_manager.state_manager_update("RFID_Scanner",
                                        "dataRFID_Exit",
                                        opc.read_tag("RFID_Scanner", "dataRFID_Exit"))
-    state_manager.state_manager_update(state_manager.misc_tags,
+    state_manager.state_manager_update("RFID_Scanner",
                                        "scan_status_rfid1",
                                        opc.read_tag("RFID_Scanner", "scan_status_rfid1"))
-    state_manager.state_manager_update(state_manager.misc_tags,
+    state_manager.state_manager_update("RFID_Scanner",
                                        "scan_status_rfid2",
                                        opc.read_tag("RFID_Scanner", "scan_status_rfid2"))
     

@@ -9,13 +9,13 @@ commands = {
 }
 # Settings and Response of Device 1
 response_device_1 = {
-    "deviceName": config_loader.serial_config_load("deviceName", 0),
-    "isActive:": config_loader.serial_config_load("isActive", 0),
-    "deviceID": config_loader.serial_config_load("deviceID", 0),
-    "comPort": config_loader.serial_config_load("comPort", 0),
-    "baudrate": config_loader.serial_config_load("baudrate", 0),
-    "timeout": config_loader.serial_config_load("timeout", 0),
-    "pollingInterval": config_loader.serial_config_load("pollingInterval", 0),
+    "deviceName_entranceWB1": config_loader.serial_config_load("deviceName_entranceWB1", 0),
+    "isActive_entranceWB1:": config_loader.serial_config_load("isActive_entranceWB1", 0),
+    "deviceID_entranceWB1": config_loader.serial_config_load("deviceID_entranceWB1", 0),
+    "comPort_entranceWB1": config_loader.serial_config_load("comPort_entranceWB1", 0),
+    "baudrate_entranceWB1": config_loader.serial_config_load("baudrate_entranceWB1", 0),
+    "timeout_entranceWB1": config_loader.serial_config_load("timeout_entranceWB1", 0),
+    "pollingInterval_entranceWB1": config_loader.serial_config_load("pollingInterval_entranceWB1", 0),
     "signBit": "+",
     "handshakeResponse": "AA00",
     "grossWeight": 0,
@@ -28,13 +28,13 @@ response_device_1 = {
 
 # Settings and Response of Device 2
 response_device_2 = {
-    "deviceName": config_loader.serial_config_load("deviceName", 1),
-    "isActive:": config_loader.serial_config_load("isActive", 1),
-    "deviceID": config_loader.serial_config_load("deviceID", 1),
-    "comPort": config_loader.serial_config_load("comPort", 1),
-    "baudrate": config_loader.serial_config_load("baudrate", 1),
-    "timeout": config_loader.serial_config_load("timeout", 1),
-    "pollingInterval": config_loader.serial_config_load("pollingInterval", 1),
+    "deviceName_exitWB2": config_loader.serial_config_load("deviceName_exitWB2", 1),
+    "isActive_exitWB2:": config_loader.serial_config_load("isActive_exitWB2", 1),
+    "deviceID_exitWB2": config_loader.serial_config_load("deviceID_exitWB2", 1),
+    "comPort_exitWB2": config_loader.serial_config_load("comPort_exitWB2", 1),
+    "baudrate_exitWB2": config_loader.serial_config_load("baudrate_exitWB2", 1),
+    "timeout_exitWB2": config_loader.serial_config_load("timeout_exitWB2", 1),
+    "pollingInterval_exitWB2": config_loader.serial_config_load("pollingInterval_exitWB2", 1),
     "signBit": "+",
     "handshakeResponse": "AA00",
     "grossWeight": 0,

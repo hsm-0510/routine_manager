@@ -28,7 +28,7 @@ def scheduler1(opc, port, baudrate, timeout, idNum):
             responseD = serial_client.send_command(ser, commands.commands["net_weight"])
             # Updating Device Dictionary
             if idNum == 0:
-                commands.response_device_1["handshakeResponse"] = parser.parse_handshakeResponse(responseB)
+                commands.response_device_1["handshakeResponse"] = parser.parse_handshakeResponse(responseA)
                 commands.response_device_1["signBit"] = parser.parse_signBit(responseB)
                 commands.response_device_1["grossWeight"] = parser.parse_grossWeight(responseB,
                                                                                     parser.parse_signBit(responseB),
@@ -42,7 +42,7 @@ def scheduler1(opc, port, baudrate, timeout, idNum):
                 print(f"Gross Weight Device 1: {parser.parse_grossWeight(responseB, commands.response_device_1["signBit"],
                     commands.response_device_1["decimalPoints"])} kg")
             else:
-                commands.response_device_2["handshakeResponse"] = parser.parse_handshakeResponse(responseB)
+                commands.response_device_2["handshakeResponse"] = parser.parse_handshakeResponse(responseA)
                 commands.response_device_2["signBit"] = parser.parse_signBit(responseB)
                 commands.response_device_2["grossWeight"] = parser.parse_grossWeight(responseB,
                                                                                     parser.parse_signBit(responseB),
@@ -58,7 +58,7 @@ def scheduler1(opc, port, baudrate, timeout, idNum):
             # Loop Delay
             time.sleep(0.1)
         except Exception as e:
-            print("[SCHEDULER 1 ERROR]: {e}")
+            print(f"[SCHEDULER 1 ERROR]: {e}")
 
 def scheduler2(opc, port1, baudrate1, timeout1, port2, baudrate2, timeout2):
     # Establishing Connection with Device 1
@@ -67,14 +67,14 @@ def scheduler2(opc, port1, baudrate1, timeout1, port2, baudrate2, timeout2):
         print("Established Connection with Device 1")
     except:
         print("Could Not Connect with Device 1")
-        serial_client.disconnect_serial(port1, baudrate1, timeout1)
+        serial_client.disconnect_serial(ser1)
     # Establishing Connection with Device 2       
     try:
         ser2 = serial_client.connect_serial(port2, baudrate2, timeout2)
         print("Established Connection with Device 2")
     except:
         print("Could Not Connect with Device 2")
-        serial_client.disconnect_serial(port2, baudrate2, timeout2)
+        serial_client.disconnect_serial(ser2)
     
     while True:
         try:
@@ -84,7 +84,7 @@ def scheduler2(opc, port1, baudrate1, timeout1, port2, baudrate2, timeout2):
             responseC1 = serial_client.send_command(ser1, commands.commands["tare_weight"])
             responseD1 = serial_client.send_command(ser1, commands.commands["net_weight"])
             # Updating Device 1 Dictionary
-            commands.response_device_1["handshakeResponse"] = parser.parse_handshakeResponse(responseB1)
+            commands.response_device_1["handshakeResponse"] = parser.parse_handshakeResponse(responseA1)
             commands.response_device_1["signBit"] = parser.parse_signBit(responseB1)
             commands.response_device_1["grossWeight"] = parser.parse_grossWeight(responseB1,
                                                                                 parser.parse_signBit(responseB1),
@@ -100,7 +100,7 @@ def scheduler2(opc, port1, baudrate1, timeout1, port2, baudrate2, timeout2):
             responseC2 = serial_client.send_command(ser2, commands.commands["tare_weight"])
             responseD2 = serial_client.send_command(ser2, commands.commands["net_weight"])
             # Updating Device 2 Dictionary
-            commands.response_device_2["handshakeResponse"] = parser.parse_handshakeResponse(responseB2)
+            commands.response_device_2["handshakeResponse"] = parser.parse_handshakeResponse(responseA2)
             commands.response_device_2["signBit"] = parser.parse_signBit(responseB2)
             commands.response_device_2["grossWeight"] = parser.parse_grossWeight(responseB2,
                                                                                 parser.parse_signBit(responseB2),
