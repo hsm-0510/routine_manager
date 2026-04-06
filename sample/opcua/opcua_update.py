@@ -50,17 +50,17 @@ def update_opc_elements(opc, sock):
     #                                   key,
     #                                   int(opc.read_tag()))
     tcp_client.update_payload(state_manager.tcp_payload,
-                                "vehicle_alignment_status",
-                                int(opc.read_tag("Camera_Detection", "vehicle_alignment_status")))
+                                "vehicle_alignment_status_camera",
+                                int(opc.read_tag("Camera_Detection", "vehicle_alignment_status_camera")))
     tcp_client.update_payload(state_manager.tcp_payload,
-                                "driver_absence_status",
-                                int(opc.read_tag("Camera_Detection", "driver_absence_status")))
+                                "driver_absence_status_camera",
+                                int(opc.read_tag("Camera_Detection", "driver_absence_status_camera")))
     tcp_client.update_payload(state_manager.tcp_payload,
-                                "weight_capture_status1",
-                                int(opc.read_tag("Entrance_XK3190_DS8", "weight_capture_status1")))
+                                "weight_capture_entranceControl1",
+                                int(opc.read_tag("Entrance_XK3190_DS8", "weight_capture_entranceControl1")))
     tcp_client.update_payload(state_manager.tcp_payload,
-                                "weight_capture_status2",
-                                int(opc.read_tag("Exit_XK3190_DS8", "weight_capture_status2")))
+                                "weight_capture_exitControl2",
+                                int(opc.read_tag("Exit_XK3190_DS8", "weight_capture_exitControl2")))
     tcp_client.update_payload(state_manager.tcp_payload,
                                 "scan_status_rfid1",
                                 int(opc.read_tag("RFID_Scanner", "scan_status_rfid1")))
@@ -68,11 +68,11 @@ def update_opc_elements(opc, sock):
                                 "scan_status_rfid2",
                                 int(opc.read_tag("RFID_Scanner", "scan_status_rfid2")))
     tcp_client.update_payload(state_manager.tcp_payload,
-                                "print_status_entrance",
-                                int(opc.read_tag("KIOSK", "print_status_entrance")))
+                                "kiosk_print_control_entrance",
+                                int(opc.read_tag("KIOSK", "kiosk_print_control_entrance")))
     tcp_client.update_payload(state_manager.tcp_payload,
-                                "print_status_exit",
-                                int(opc.read_tag("KIOSK", "print_status_exit")))
+                                "kiosk_print_control_exit",
+                                int(opc.read_tag("KIOSK", "kiosk_print_control_exit")))
     tcp_client.update_payload(state_manager.tcp_payload,
                                 "kiosk_button_entrance",
                                 int(opc.read_tag("KIOSK", "kiosk_button_entrance")))

@@ -25,7 +25,7 @@
         "gross_weight_entranceWB1": 0,
         "gross_weight_exitWB2": 0,
         "weight_capture_entranceControl1": 0,
-        "Weight_capture_exitControl2": 0,
+        "weight_capture_exitControl2": 0,
         "scan_status_rfid1": 0,
         "scan_status_rfid2": 0,
         "kiosk_print_control_entrance": 0,
