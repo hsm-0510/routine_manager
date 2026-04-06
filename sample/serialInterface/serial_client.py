@@ -4,6 +4,17 @@ import time
 import serial
 from sample.utils import config_loader
 
+# Load active_status, port and baudrate of indicator 1:
+dev1 = config_loader.serial_config_load("isActive_entranceWB1", 0)
+port1 = config_loader.serial_config_load("comPort_entranceWB1", 0)
+baudrate1 = config_loader.serial_config_load("baudrate_entranceWB1", 0)
+timeout1 = config_loader.serial_config_load("timeout_entranceWB1", 0)
+# Load active_status, port an baudrate of indicator 2:
+dev2 = config_loader.serial_config_load("isActive_exitWB2", 1)
+port2 = config_loader.serial_config_load("comPort_exitWB2", 1)
+baudrate2 = config_loader.serial_config_load("baudrate_exitWB2", 1)
+timeout2 = config_loader.serial_config_load("timeout_exitWB2", 1)
+
 def connect_serial(port, baudrate, timeout):
     try:
         ser = serial.Serial(port, baudrate, timeout=timeout)
@@ -32,16 +43,6 @@ def send_command(ser, cmd):
         print(f"Could not send command: {cmd} to {ser}, error: {e}")
 
 def checkActiveDevices():
-    # Load active_status, port and baudrate of indicator 1:
-    dev1 = config_loader.serial_config_load("isActive", 0)
-    port1 = config_loader.serial_config_load("comPort", 0)
-    baudrate1 = config_loader.serial_config_load("baudrate", 0)
-    timeout1 = config_loader.serial_config_load("timeout", 0)
-    # Load active_status, port an baudrate of indicator 2:
-    dev2 = config_loader.serial_config_load("isActive", 1)
-    port2 = config_loader.serial_config_load("comPort", 1)
-    baudrate2 = config_loader.serial_config_load("baudrate", 1)
-    timeout2 = config_loader.serial_config_load("timeout", 1)
     try:
         ser1 = connect_serial(port1, baudrate1, timeout1)
         if ser1.is_open:

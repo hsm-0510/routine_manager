@@ -1,22 +1,22 @@
 {
     "serial_device":[
         {
-            "deviceName": "Entrance_XK3190_DS8",
-            "isActive": 1,
-            "deviceID": "A",
-            "comPort": "COM5",
-            "baudrate": 9600,
-            "timeout": 1,
-            "pollingInterval": 1
+            "deviceName_entranceWB1": "Entrance_XK3190_DS8",
+            "isActive_entranceWB1": 1,
+            "deviceID_entranceWB1": "A",
+            "comPort_entranceWB1": "COM5",
+            "baudrate_entranceWB1": 9600,
+            "timeout_entranceWB1": 1,
+            "pollingInterval_entranceWB1": 1
         },
         {
-            "deviceName": "Exit_XK3190_DS8",
-            "isActive": 1,
-            "deviceID": "A",
-            "comPort": "COM8",
-            "baudrate": 9600,
-            "timeout": 1,
-            "pollingInterval": 1
+            "deviceName_exitWB2": "Exit_XK3190_DS8",
+            "isActive_exitWB2": 1,
+            "deviceID_exitWB2": "A",
+            "comPort_exitWB2": "COM8",
+            "baudrate_exitWB2": 9600,
+            "timeout_exitWB2": 1,
+            "pollingInterval_exitWB2": 1
         }
     ],
     "waveshare_device": [

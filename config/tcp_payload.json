@@ -20,16 +20,16 @@
         "channel_8": 0
     },
     "status": {
-        "vehicle_alignment_status": 0,
-        "driver_absence_status": 0,
-        "gross_weight_WB1": 0,
-        "gross_weight_WB2": 0,
-        "weight_capture_control1": 0,
-        "Weight_capture_control2": 0,
+        "vehicle_alignment_status_camera": 0,
+        "driver_absence_status_camera": 0,
+        "gross_weight_entranceWB1": 0,
+        "gross_weight_exitWB2": 0,
+        "weight_capture_entranceControl1": 0,
+        "Weight_capture_exitControl2": 0,
         "scan_status_rfid1": 0,
         "scan_status_rfid2": 0,
-        "print_control_entrance": 0,
-        "print_control_exit": 0,
+        "kiosk_print_control_entrance": 0,
+        "kiosk_print_control_exit": 0,
         "kiosk_button_entrance": 0,
         "kiosk_button_exit": 0
     }

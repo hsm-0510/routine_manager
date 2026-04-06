@@ -8,6 +8,7 @@ from sample.opcua import opcua_client
 from sample.opcua import opcua_update
 from sample.tcpClient import tcp_client
 from sample.core import state_manager
+import traceback
 
 def scheduler1(opc, port, baudrate, timeout, idNum):
     # Establishing Device Connection
@@ -32,9 +33,9 @@ def scheduler1(opc, port, baudrate, timeout, idNum):
                 commands.response_device_1["grossWeight"] = parser.parse_grossWeight(responseB,
                                                                                     parser.parse_signBit(responseB),
                                                                                     parser.parse_decimalPoints(responseB))
-                tcp_client.update_payload(state_manager.tcp_payload, "gross_weight_WB1", commands.response_device_1["grossWeight"])
+                tcp_client.update_payload(state_manager.tcp_payload, "gross_weight_entranceWB1", commands.response_device_1["grossWeight"])
                 opc.write_tag("Entrance_XK3190_DS8",
-                            "gross_weight_WB1",
+                            "gross_weight_entranceWB1",
                             str(commands.response_device_1["grossWeight"]))
                 commands.response_device_1["decimalPoints"] = parser.parse_decimalPoints(responseB)
                 # Terminal Output
@@ -46,9 +47,9 @@ def scheduler1(opc, port, baudrate, timeout, idNum):
                 commands.response_device_2["grossWeight"] = parser.parse_grossWeight(responseB,
                                                                                     parser.parse_signBit(responseB),
                                                                                     parser.parse_decimalPoints(responseB))
-                tcp_client.update_payload(state_manager.tcp_payload, "gross_weight_WB2", commands.response_device_2["grossWeight"])
+                tcp_client.update_payload(state_manager.tcp_payload, "gross_weight_exitWB2", commands.response_device_2["grossWeight"])
                 opc.write_tag("Exit_XK3190_DS8",
-                            "gross_weight_WB2",
+                            "gross_weight_exitWB2",
                             str(commands.response_device_2["grossWeight"]))
                 commands.response_device_2["decimalPoints"] = parser.parse_decimalPoints(responseB)
                 # Terminal Output
@@ -88,9 +89,9 @@ def scheduler2(opc, port1, baudrate1, timeout1, port2, baudrate2, timeout2):
             commands.response_device_1["grossWeight"] = parser.parse_grossWeight(responseB1,
                                                                                 parser.parse_signBit(responseB1),
                                                                                 parser.parse_decimalPoints(responseB1))
-            tcp_client.update_payload(state_manager.tcp_payload, "gross_weight_WB1", commands.response_device_1["grossWeight"])
+            tcp_client.update_payload(state_manager.tcp_payload, "gross_weight_entranceWB1", commands.response_device_1["grossWeight"])
             opc.write_tag("Entrance_XK3190_DS8",
-                            "gross_weight_WB1",
+                            "gross_weight_entranceWB1",
                             str(commands.response_device_1["grossWeight"]))
             commands.response_device_1["decimalPoints"] = parser.parse_decimalPoints(responseB1) 
             # Command / Response Record for Device 2
@@ -104,9 +105,9 @@ def scheduler2(opc, port1, baudrate1, timeout1, port2, baudrate2, timeout2):
             commands.response_device_2["grossWeight"] = parser.parse_grossWeight(responseB2,
                                                                                 parser.parse_signBit(responseB2),
                                                                                 parser.parse_decimalPoints(responseB2))
-            tcp_client.update_payload(state_manager.tcp_payload, "gross_weight_WB2", commands.response_device_2["grossWeight"])
+            tcp_client.update_payload(state_manager.tcp_payload, "gross_weight_exitWB2", commands.response_device_2["grossWeight"])
             opc.write_tag("Exit_XK3190_DS8",
-                            "gross_weight_WB2",
+                            "gross_weight_exitWB2",
                             str(commands.response_device_2["grossWeight"]))
             commands.response_device_2["decimalPoints"] = parser.parse_decimalPoints(responseB2)
             # Terminal Output
@@ -117,3 +118,6 @@ def scheduler2(opc, port1, baudrate1, timeout1, port2, baudrate2, timeout2):
             time.sleep(1)
         except Exception as e:
             print(f"[SCHEDULER 2 ERROR: {e}]")
+            print("--- Error Log ---")
+            traceback.print_exc() 
+            print("-----------------")

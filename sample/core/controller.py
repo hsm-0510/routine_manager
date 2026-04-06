@@ -13,24 +13,12 @@ def routine1(opc):
         print("No Active Devices")
     elif totalActiveDevices == 1 and dev1_status == 1:
         print("Device 1 is Active")
-        port = config_loader.serial_config_load("comPort", 0)
-        baudrate = config_loader.serial_config_load("baudrate", 0)
-        timeout = config_loader.serial_config_load("timeout", 0)
-        scheduler.scheduler1(opc, port, baudrate, timeout, 0)
+        scheduler.scheduler1(opc, serial_client.port1, serial_client.baudrate1, serial_client.timeout1, 0)
     elif totalActiveDevices == 1 and dev2_status == 1:
         print("Device 2 is Active")
-        port = config_loader.serial_config_load("comPort", 1)
-        baudrate = config_loader.serial_config_load("baudrate", 1)
-        timeout = config_loader.serial_config_load("timeout", 1)
-        scheduler.scheduler1(opc, port, baudrate, timeout, 1)
+        scheduler.scheduler1(opc, serial_client.port2, serial_client.baudrate2, serial_client.timeout2, 1)
     else:
         print("Device 1 is Active")
         print("Device 2 is Active")
-        port1 = config_loader.serial_config_load("comPort", 0)
-        baudrate1 = config_loader.serial_config_load("baudrate", 0)
-        timeout1 = config_loader.serial_config_load("timeout", 0)
-        port2 = config_loader.serial_config_load("comPort", 1)
-        baudrate2 = config_loader.serial_config_load("baudrate", 1)
-        timeout2 = config_loader.serial_config_load("timeout", 1)
-        scheduler.scheduler2(opc, port1, baudrate1, timeout1,
-                                port2, baudrate2, timeout2)
+        scheduler.scheduler2(opc, serial_client.port1, serial_client.baudrate1, serial_client.timeout1,
+                                serial_client.port2, serial_client.baudrate2, serial_client.timeout2)
