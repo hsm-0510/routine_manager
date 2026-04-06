@@ -40,6 +40,30 @@ response_device_2 = {
     "xorCheck2": "0"
 }
 
+# Other Tags
+misc_tags = {
+            "RFID_Scanner": [
+                {"dataRFID_Entrance": "00000000"},
+                {"dataRFID_Exit": "0000000"},
+                {"scan_status_rfid1": 0},
+                {"scan_status_rfid2": 0}
+            ],
+            "KIOSK": [
+                {"kiosk_button_entrance": 0},
+                {"kiosk_button_exit": 0},
+                {"kiosk_print_control_entrance": 0},
+                {"kiosk_print_control_exit": 0},
+                {"cardData_entrance": "00000000"},
+                {"cardData_exit": "00000000"},
+                {"receiptData_1": "00000000"},
+                {"receiptData_2": "00000000"},
+                {"receiptData_3": "00000000"},
+                {"receiptData_4": "00000000"},
+                {"receiptData_5": "00000000"},
+                {"receiptData_6": "00000000"}
+            ]
+}
+
 # TCP Payload of Waveshare Module (Dictionary)
 # Any changes made to tcp_payload.json must be reflected in the waveshare firmware as well
 tcp_payload = config_loader.tcp_payload_config_load()

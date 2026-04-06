@@ -49,10 +49,6 @@ if __name__ == "__main__":
     # Establishing TCP Connection Manager
     conn_mgr = tcp_connection_manager.TCPConnectionManager(tcp_client.SERVER_IP, tcp_client.SERVER_PORT)
     
-    # # Establish TCP Socket Connection
-    # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # tcp_client.connect_tcp_socket(sock, tcp_client.SERVER_IP, tcp_client.SERVER_PORT)
-    
     # OPCUA Update Thread
     # threading.Thread(target=opcua_update.update_opc_elements, args=(opc, sock,), daemon=True).start()
     
