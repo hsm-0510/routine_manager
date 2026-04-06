@@ -14,6 +14,7 @@ def main():
     try:
         while True: # TCP/OPCUA Data-transfer
             opcua_update.update_opc_elements(opc, sock)
+            time.sleep(1)
     except KeyboardInterrupt:
         print("\nClosing Connection...")
         sock.close()
@@ -45,7 +46,7 @@ if __name__ == "__main__":
     threading.Thread(target=tcp_client.receive_data, args=(sock,), daemon=True).start()
     
     # OPCUA Update Thread
-    threading.Thread(target=opcua_update.update_opc_elements, args=(opc, sock,), daemon=True).start()
+    # threading.Thread(target=opcua_update.update_opc_elements, args=(opc, sock,), daemon=True).start()
     
     #Run Main()
     main()
