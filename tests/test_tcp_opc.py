@@ -5,6 +5,7 @@ import time
 from sample.opcua.opcua_client import PSOWeighbridgeClient
 from sample.opcua import opcua_update
 from sample.tcpClient import tcp_client
+from sample.tcpClient import tcp_connection_manager
 from sample.utils import config_loader
 from sample.core import state_manager
 from sample.core import controller
@@ -12,15 +13,29 @@ from sample.core import controller
 def main():
     # Keep main thread alive
     try:
+        # Establish OPC Connection as Client
+        opc.connect()
+        
+        # Start reconnect manager
+        threading.Thread(target=conn_mgr.connect, daemon=True).start()
+        
+        # Serial Data-in Thread
+        threading.Thread(target=controller.routine1, args=(opc,), daemon=True).start()
+        
+        # TCP send & receive threads
+        threading.Thread(target=tcp_client.send_data, args=(conn_mgr, state_manager.tcp_payload,), daemon=True).start()
+        threading.Thread(target=tcp_client.receive_data, args=(conn_mgr,), daemon=True).start()
+        
         while True: # TCP/OPCUA Data-transfer
-            opcua_update.update_opc_elements(opc, sock)
+            opcua_update.update_opc_elements(opc)
             time.sleep(1)
     except KeyboardInterrupt:
         print("\nClosing Connection...")
-        sock.close()
+        conn_mgr.close()
     except Exception as e:
         print(f"Error: {e}")
     finally:
+        conn_mgr.close()
         opc.disconnect()
 
 if __name__ == "__main__":
@@ -31,19 +46,12 @@ if __name__ == "__main__":
         server_object_name=config_loader.opc_config_load("serverObjectName", 0)
     )
     
-    # Establish OPC Connection as Client
-    opc.connect()
+    # Establishing TCP Connection Manager
+    conn_mgr = tcp_connection_manager.TCPConnectionManager(tcp_client.SERVER_IP, tcp_client.SERVER_PORT)
     
-    # Establish TCP Socket Connection
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcp_client.connect_tcp_socket(sock, tcp_client.SERVER_IP, tcp_client.SERVER_PORT)
-    
-    # Serial Data-in Thread
-    threading.Thread(target=controller.routine1, args=(opc,), daemon=True).start()
-    
-    # TCP send & receive threads
-    threading.Thread(target=tcp_client.send_data, args=(sock, state_manager.tcp_payload,), daemon=True).start()
-    threading.Thread(target=tcp_client.receive_data, args=(sock,), daemon=True).start()
+    # # Establish TCP Socket Connection
+    # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # tcp_client.connect_tcp_socket(sock, tcp_client.SERVER_IP, tcp_client.SERVER_PORT)
     
     # OPCUA Update Thread
     # threading.Thread(target=opcua_update.update_opc_elements, args=(opc, sock,), daemon=True).start()

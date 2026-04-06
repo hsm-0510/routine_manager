@@ -8,10 +8,7 @@ from sample.utils import config_loader
 from sample.core import state_manager
 from sample.core import controller
 
-def update_opc_elements(opc, sock):
-    # Update Time
-    time.sleep(1)
-    
+def update_opc_elements(opc):
     # Update System Configurations Entrance Weighbridge
     for required_dictionary in state_manager.system_config["serial_device"]:
         for key in required_dictionary:
