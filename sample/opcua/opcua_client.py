@@ -26,7 +26,7 @@ class PSOWeighbridgeClient:
     def get_tag_node(self, category_name, tag_name):
         """
         Builds browse path like:
-        Objects -> PSO Smart Weighbridge -> Entrance_XK3190_DS8 -> gross_weight_WB1
+        Objects -> PSO Smart Weighbridge -> Entrance_XK3190_     DS8 -> gross_weight_WB1
         """
         path = [
             "0:Objects",
@@ -36,11 +36,26 @@ class PSOWeighbridgeClient:
         ]
         return self.root.get_child(path)
 
-    def read_tag(self, category_name, tag_name):
+    def read_tag(self, category_name, tag_name, type):
         old_value = ""
         try:
             node = self.get_tag_node(category_name, tag_name)
-            value = node.get_value()
+            if type == "string":
+                value = node.get_value()
+            else:
+                value = node.get_value()
+                if int(value) >= 0:
+                    value = value
+                else:
+                    value = 0
+            # if category_name == "SAP_DATA":
+            #     value = node.get_value()
+            # else:
+            #     value = node.get_value()
+            #     if int(value) >= 0:
+            #         value = value
+            #     else:
+            #         value = 0
             print(f"READ  {category_name}.{tag_name} = {value}")
             return value
         except ValueError:

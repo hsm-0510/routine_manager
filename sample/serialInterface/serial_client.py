@@ -1,5 +1,7 @@
 from sample.serialInterface import commands
 from sample.serialInterface import parser
+from sample.tcpClient import tcp_client
+from sample.core import state_manager
 import time
 import serial
 from sample.utils import config_loader
@@ -65,8 +67,38 @@ def checkActiveDevices():
         dev2 = 0
     return dev1+dev2, dev1, dev2
 
-def main():
-    print("null")
-
-if __name__ == "__main__":
-    main()
+def record_serial_response(ser, device, opc):
+    # Command / Response Record
+    responseA = send_command(ser, commands.commands["handshake"])
+    responseB = send_command(ser, commands.commands["gross_weight"])
+    responseC = send_command(ser, commands.commands["tare_weight"])
+    responseD = send_command(ser, commands.commands["net_weight"]) 
+    
+    if device == "device1":
+        # Updating Device 1 Dictionary
+        commands.response_device_1["handshakeResponse"] = parser.parse_handshakeResponse(responseA)
+        commands.response_device_1["signBit"] = parser.parse_signBit(responseB)
+        commands.response_device_1["grossWeight"] = parser.parse_grossWeight(responseB,
+                                                                            parser.parse_signBit(responseB),
+                                                                            parser.parse_decimalPoints(responseB))
+        tcp_client.update_payload(state_manager.tcp_payload, "gross_weight_entranceWB1", commands.response_device_1["grossWeight"])
+        opc.write_tag("Entrance_XK3190_DS8",
+                        "gross_weight_entranceWB1",
+                        str(commands.response_device_1["grossWeight"]))
+        commands.response_device_1["decimalPoints"] = parser.parse_decimalPoints(responseB)
+    elif device == "device2":
+        # Updating Device 2 Dictionary
+        commands.response_device_2["handshakeResponse"] = parser.parse_handshakeResponse(responseA)
+        commands.response_device_2["signBit"] = parser.parse_signBit(responseB)
+        commands.response_device_2["grossWeight"] = parser.parse_grossWeight(responseB,
+                                                                            parser.parse_signBit(responseB),
+                                                                            parser.parse_decimalPoints(responseB))
+        tcp_client.update_payload(state_manager.tcp_payload, "gross_weight_exitWB2", commands.response_device_2["grossWeight"])
+        opc.write_tag("Exit_XK3190_DS8",
+                        "gross_weight_exitWB2",
+                        str(commands.response_device_2["grossWeight"]))
+        commands.response_device_2["decimalPoints"] = parser.parse_decimalPoints(responseB)
+    else:
+        print("[RECORD ERROR]: Wrong Device Being Accessed!")
+    
+    
