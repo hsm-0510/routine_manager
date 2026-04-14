@@ -1,8 +1,4 @@
-import socket
-import json
-import threading
-import time
-import traceback
+import socket, json, threading, time, traceback
 from sample.opcua.opcua_client import PSOWeighbridgeClient
 from sample.opcua import opcua_update
 from sample.opcua import opcua_client

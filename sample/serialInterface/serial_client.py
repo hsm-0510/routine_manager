@@ -1,9 +1,8 @@
+import time, serial
 from sample.serialInterface import commands
 from sample.serialInterface import parser
 from sample.tcpClient import tcp_client
 from sample.core import state_manager
-import time
-import serial
 from sample.utils import config_loader
 
 # Load active_status, port and baudrate of indicator 1:

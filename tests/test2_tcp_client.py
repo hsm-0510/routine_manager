@@ -1,7 +1,4 @@
-import socket
-import json
-import threading
-import time
+import socket, json, threading, time
 from sample.tcpClient import tcp_client
 
 def main():

@@ -1,7 +1,4 @@
-import socket
-import json
-import threading
-import time
+import socket, json, threading, time
 from sample.utils import config_loader
 from sample.core import state_manager
 from sample.tcpClient import tcp_connection_manager

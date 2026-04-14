@@ -1,7 +1,4 @@
-import socket
-import json
-import threading
-import time
+import socket, json, threading, time
 from sample.opcua.opcua_client import PSOWeighbridgeClient
 from sample.opcua import opcua_update
 from sample.tcpClient import tcp_client

@@ -1,7 +1,5 @@
-import threading
-import socket
+import threading, socket, time
 from sample.opcua import opcua_update
-import time
 
 class TCPConnectionManager:
     def __init__(self, server_ip, server_port):

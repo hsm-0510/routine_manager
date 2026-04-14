@@ -1,4 +1,4 @@
-import time
+import time, traceback
 from sample.core import scheduler
 from sample.serialInterface import commands
 from sample.serialInterface import parser
@@ -8,7 +8,6 @@ from sample.opcua import opcua_client
 from sample.opcua import opcua_update
 from sample.tcpClient import tcp_client
 from sample.core import state_manager
-import traceback
 
 def scheduler1(opc, port, baudrate, timeout, idNum):
     # Establishing Device Connection
