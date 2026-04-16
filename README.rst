@@ -1,225 +1,206 @@
 Routine Manager
 ===============
 
-A modular Python application for industrial data acquisition, protocol handling, OPC UA publishing, TCP synchronization, and machine-learning-based prediction workflows.
+A modular Python integration project for managing routine data flow between
+serial weighing devices, an OPC UA server, and a TCP-based Waveshare payload.
+
+The repository follows a configuration-driven architecture so device details,
+tag names, and connection settings can be changed without modifying the core
+application logic.
 
 Overview
---------
+========
 
-``routine_manager`` is designed around a clean separation of responsibilities:
+The project is designed to:
 
-- **Serial layer** handles low-level device communication and command/response parsing.
-- **Core layer** coordinates polling, state management, and runtime orchestration.
-- **OPC UA layer** exposes structured data to OPC UA clients and updates tags as data changes.
-- **TCP layer** manages resilient socket connectivity and payload updates.
-- **ML layer** buffers events, builds features, loads a trained model, and produces predictions.
-- **Config layer** keeps deployment-specific settings outside the codebase.
+* Read data from one or two serial weighing indicators
+* Parse device responses into usable weight values
+* Publish values to an OPC UA server
+* Synchronize a JSON payload over TCP for external hardware such as Waveshare modules
+* Keep runtime settings outside the codebase in JSON configuration files
 
-Key Capabilities
-----------------
+The main package under ``sample/`` contains the application logic, while
+``config/`` stores deployment settings and payload templates.
 
-- Serial communication through reusable client helpers
-- Centralized command definitions for device requests
-- Parsing helpers for handshake, address, sign, and weight extraction
-- OPC UA node browsing and tag updates
-- Runtime configuration loading from JSON files
-- TCP socket connection management with reconnect logic
-- Buffered ML inference using a saved model and label encoder
-- Test modules for module-level validation
-- Documentation assets for architecture and requirements
+Key Features
+============
+
+* Serial communication with one or two weighbridge indicators
+* Device availability detection for automatic polling mode selection
+* Parsing of handshake, sign bit, decimal places, and gross weight
+* OPC UA client support for reading and writing tags
+* TCP payload update and exchange using JSON messages
+* External configuration loading from JSON files
+* Test modules for serial, parser, OPC UA, TCP, and multi-device flows
 
 Project Structure
------------------
+=================
 
-::
+.. code-block:: text
 
     routine_manager/
     ├── config/
-    │   ├── readme.txt
     │   ├── system_config.json
     │   └── tcp_payload.json
     ├── docs/
     │   ├── conf.py
-    │   ├── index.rst
-    │   ├── readme.txt
-    │   ├── receipt_printing.png
-    │   └── software_requirements.png
+    │   └── index.rst
     ├── sample/
     │   ├── core/
-    │   │   ├── controller.py
-    │   │   ├── scheduler.py
-    │   │   └── state_manager.py
-    │   ├── inferenceEngineML/
-    │   │   ├── buffer_manager.py
-    │   │   ├── feature_builder.py
-    │   │   ├── model_runner.py
-    │   │   └── prediction.py
-    │   ├── modelsML/
-    │   │   ├── label_encoder.pkl
-    │   │   └── xgboost_trailer_model.pkl
     │   ├── opcua/
-    │   │   ├── opcua_client.py
-    │   │   └── opcua_update.py
     │   ├── serialInterface/
-    │   │   ├── commands.py
-    │   │   ├── parser.py
-    │   │   └── serial_client.py
     │   ├── tcpClient/
-    │   │   ├── tcp_client.py
-    │   │   └── tcp_connection_manager.py
-    │   └── utils/
-    │       ├── config_loader.py
-    │       └── logger.py
+    │   ├── utils/
+    │   └── main.py
     ├── tests/
-    │   ├── readme.txt
-    │   ├── simulation/
-    │   │   ├── sample_test1.xlsx
-    │   │   └── sim1_sap_opc.py
-    │   ├── test1_serial.py
-    │   ├── test2_tcp_client.py
-    │   ├── test3_parser.py
-    │   ├── test4_opcua.py
-    │   ├── test5_multi_serial.py
-    │   ├── test6_tcp_opc.py
-    │   └── test7_sap_opc.py
-    ├── LICENSE
     ├── requirements.txt
     ├── setup.py
-    └── README.rst
+    └── LICENSE
 
-Runtime Configuration
----------------------
+How It Works
+============
 
-The repository keeps runtime settings outside the code in ``config/`` to avoid hard-coding deployment details.
+1. Configuration Loading
+------------------------
 
-Goals include:
+``sample/utils/config_loader.py`` loads runtime settings from:
 
-- Changing serial port or baud rate without code changes
-- Modifying OPC UA tags without code changes
-- Supporting multiple deployments easily
+* ``config/system_config.json``
+* ``config/tcp_payload.json``
 
-Configuration files:
+2. Serial Device Handling
+-------------------------
 
-- ``system_config.json`` — serial device, OPC server, and runtime configuration
-- ``tcp_payload.json`` — TCP payload structure and values
-- ``config_loader.py`` — shared loader utilities
+``sample/serialInterface/serial_client.py``:
 
-Serial Communication
---------------------
+* Loads serial settings
+* Opens COM ports
+* Detects active devices
+* Sends commands to indicators
 
-The serial interface is built using reusable helpers:
-
-- ``serial_client.py`` — handles connection lifecycle
-- ``commands.py`` — stores command bytes
-- ``parser.py`` — parses raw device responses
-
-Supported commands include:
-
-- Handshake
-- Gross weight
-- Tare weight
-- Net weight
-
-OPC UA Layer
-------------
-
-- ``opcua_client.py`` — OPC UA client wrapper for connection and browsing
-- ``opcua_update.py`` — updates OPC UA nodes from runtime state
-
-TCP Layer
----------
-
-- ``tcp_connection_manager.py`` — maintains persistent connection and reconnect logic
-- ``tcp_client.py`` — handles payload updates and nested data manipulation
-
-Core Orchestration
-------------------
-
-- ``controller.py`` — coordinates data flow between modules
-- ``scheduler.py`` — manages polling loop and execution timing
-- ``state_manager.py`` — maintains shared runtime state with thread safety
-
-ML Inference Pipeline
----------------------
-
-- ``buffer_manager.py`` — groups and buffers events
-- ``feature_builder.py`` — prepares model-ready features
-- ``model_runner.py`` — loads model and performs predictions
-- ``prediction.py`` — integrates ML output into application state
-
-Model artifacts:
-
-- ``xgboost_trailer_model.pkl``
-- ``label_encoder.pkl``
-
-Testing
--------
-
-The ``tests/`` directory includes validation modules for:
-
-- Serial communication
-- Parser logic
-- OPC UA integration
-- TCP communication
-- SAP-to-OPC workflows
-
-Requirements
-------------
-
-Dependencies listed in ``requirements.txt``:
-
-::
-
-    pyserial
-    opcua
-    time
-
-Getting Started
+3. Data Parsing
 ---------------
 
-1. Install dependencies:
+``sample/serialInterface/parser.py`` extracts:
 
-::
+* Handshake response
+* Indicator address
+* Sign bit
+* Decimal point count
+* Gross weight
 
-    pip install -r requirements.txt
-
-2. Install the package:
-
-::
-
-    pip install .
-
-3. Configure the system:
-
-Edit JSON files in ``config/``:
-
-- Serial settings
-- OPC UA server configuration
-- TCP payload schema
-
-4. Run the application:
-
-The main runtime starts from ``sample/main.py``.
-
-Data Flow
----------
-
-Typical system flow:
-
-1. Read data from serial device
-2. Parse raw responses
-3. Update internal state
-4. Push values to OPC UA
-5. Optionally send via TCP
-6. Run ML inference
-7. Publish predictions
-
-Documentation
+4. Scheduling
 -------------
 
-Additional documentation is available under ``docs/``.
+``sample/core/scheduler.py`` contains the polling logic:
+
+* ``scheduler1(...)`` for a single active device
+* ``scheduler2(...)`` for dual-device operation
+
+The scheduler continuously:
+
+* Reads serial data
+* Parses values
+* Updates the TCP payload
+* Writes values to OPC UA tags
+
+5. OPC UA Integration
+---------------------
+
+``sample/opcua/opcua_client.py`` manages:
+
+* OPC UA connection
+* Tag reading
+* Tag writing
+
+6. Payload Synchronization
+--------------------------
+
+``sample/tcpClient/tcp_client.py`` handles:
+
+* JSON payload updates
+* TCP communication
+* Newline-delimited JSON transmission
+
+``sample/opcua/opcua_update.py`` bridges OPC UA values into the payload.
+
+Configuration
+=============
+
+system_config.json
+------------------
+
+Stores runtime settings for:
+
+* ``serial_device``
+* ``waveshare_device``
+* ``opc_server``
+
+Example values:
+
+* Entrance serial port: ``COM5``
+* Exit serial port: ``COM8``
+* Baud rate: ``9600``
+* OPC UA endpoint:
+
+  ``opc.tcp://127.0.0.1:5501/pso/weighbridge/``
+
+tcp_payload.json
+----------------
+
+Defines the structured TCP payload used by the external device integration.
+
+Installation
+============
+
+.. code-block:: bash
+
+    git clone https://github.com/hsm-0510/routine_manager.git
+    cd routine_manager
+    pip install -r requirements.txt
+    pip install -e .
+
+Usage
+=====
+
+Example usage:
+
+.. code-block:: python
+
+    from sample.opcua.opcua_client import PSOWeighbridgeClient
+    from sample.core.controller import routine1
+
+    opc = PSOWeighbridgeClient("opc.tcp://127.0.0.1:5501/pso/weighbridge/")
+    opc.connect()
+    routine1(opc)
+
+Testing
+=======
+
+The ``tests/`` directory includes scripts for:
+
+* Serial communication
+* Parser validation
+* OPC UA connectivity
+* TCP client testing
+* Multi-device handling
+
+Run tests using:
+
+.. code-block:: bash
+
+    python -m tests.test_serial
+
+or your preferred Python test framework.
+
+Notes
+=====
+
+* The repository is configuration-driven for easier deployment
+* Several modules depend on expected JSON keys
+* Intended for weighbridge integration with OPC UA and TCP synchronization
 
 License
--------
+=======
 
-Refer to the ``LICENSE`` file for full terms.
+See the ``LICENSE`` file for licensing details.
