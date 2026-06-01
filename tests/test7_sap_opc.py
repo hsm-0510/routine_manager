@@ -7,11 +7,19 @@ from sample.tcpClient import tcp_connection_manager
 from sample.utils import config_loader
 from sample.core import state_manager
 from sample.core import controller
+from sample.core import localDB
 from sample.inferenceEngineML import prediction
 from sample.inferenceEngineML.prediction import PredictionEngine
+import pandas as pd
 
 # GLOBAL ML ENGINE
 engine = PredictionEngine()
+
+# INITIALIZE DATABASE
+localDB.initialize_database()
+
+# LOCAL DATABASE
+# df = pd.read_excel("Weighbridge_Local_Database.xlsx")
 
 def main():
     # Keep main thread alive
@@ -29,8 +37,11 @@ def main():
         threading.Thread(target=tcp_client.send_data, args=(conn_mgr, state_manager.tcp_payload,), daemon=True).start()
         threading.Thread(target=tcp_client.receive_data, args=(conn_mgr,), daemon=True).start()
         
+        # Routine Thread
+        threading.Thread(target=controller.process_automation1_entrance, args=(opc,), daemon=True).start()
+        
         # ML Inference Thread
-        threading.Thread(target=prediction.ml_inference_worker, args=(opc,engine,), daemon=True).start()
+        # threading.Thread(target=prediction.ml_inference_worker, args=(opc,engine,), daemon=True).start()
         
         while True: # TCP/OPCUA Data-transfer
             opcua_update.update_opc_elements(opc)

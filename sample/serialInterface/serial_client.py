@@ -84,6 +84,7 @@ def record_serial_response(ser, device, opc):
         opc.write_tag("Entrance_XK3190_DS8",
                         "gross_weight_entranceWB1",
                         str(commands.response_device_1["grossWeight"]))
+        state_manager.state_manager_update("WEIGHBRIDGE", "gross_weight_entranceWB1", str(commands.response_device_1["grossWeight"]))
         commands.response_device_1["decimalPoints"] = parser.parse_decimalPoints(responseB)
     elif device == "device2":
         # Updating Device 2 Dictionary
@@ -96,6 +97,7 @@ def record_serial_response(ser, device, opc):
         opc.write_tag("Exit_XK3190_DS8",
                         "gross_weight_exitWB2",
                         str(commands.response_device_2["grossWeight"]))
+        state_manager.state_manager_update("WEIGHBRIDGE", "gross_weight_exitWB2", str(commands.response_device_2["grossWeight"]))
         commands.response_device_2["decimalPoints"] = parser.parse_decimalPoints(responseB)
     else:
         print("[RECORD ERROR]: Wrong Device Being Accessed!")

@@ -80,11 +80,17 @@ def update_opc_elements(opc):
     
     # Update TCP_Payload (WAVESHARE STATUSES)
     tcp_client.update_payload(state_manager.tcp_payload,
-                                "vehicle_alignment_status_camera",
-                                int(opc.read_tag("Camera_Detection", "vehicle_alignment_status_camera", "int")))
+                                "vehicle_alignment_status_camera_ent",
+                                int(opc.read_tag("Camera_Detection", "vehicle_alignment_status_camera_ent", "int")))
     tcp_client.update_payload(state_manager.tcp_payload,
-                                "driver_absence_status_camera",
-                                int(opc.read_tag("Camera_Detection", "driver_absence_status_camera", "int")))
+                                "vehicle_alignment_status_camera_ext",
+                                int(opc.read_tag("Camera_Detection", "vehicle_alignment_status_camera_ext", "int")))
+    tcp_client.update_payload(state_manager.tcp_payload,
+                                "driver_absence_status_camera_ent",
+                                int(opc.read_tag("Camera_Detection", "driver_absence_status_camera_ent", "int")))
+    tcp_client.update_payload(state_manager.tcp_payload,
+                                "driver_absence_status_camera_ext",
+                                int(opc.read_tag("Camera_Detection", "driver_absence_status_camera_ext", "int")))
     tcp_client.update_payload(state_manager.tcp_payload,
                                 "weight_capture_entranceControl1",
                                 int(opc.read_tag("Entrance_XK3190_DS8", "weight_capture_entranceControl1", "int")))

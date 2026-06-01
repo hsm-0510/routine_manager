@@ -1,7 +1,5 @@
+import os, json, threading
 from sample.utils import config_loader
-import os
-import json
-import threading
 
 # System Tags
 misc_tags = {
@@ -42,6 +40,10 @@ misc_tags = {
         "SAP_PROB_THEFT": "",
         "SAP_PROB_DRIFT": "",
         "SAP_PROB_MISSING": ""
+    },
+    "WEIGHBRIDGE": {
+        "gross_weight_entranceWB1": "",
+        "gross_weight_exitWB2": ""
     }
 }
 

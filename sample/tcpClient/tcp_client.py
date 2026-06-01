@@ -7,6 +7,7 @@ SERVER_IP = config_loader.waveshare_config_load("serverIp", 0)
 SERVER_PORT = config_loader.waveshare_config_load("serverPort", 0)
 last_message = ""
 message = " "
+
 # Establish TCP Socket
 def connect_tcp_socket(sock, serverIP, serverPort):
     try:
@@ -54,9 +55,7 @@ def send_data(conn_mgr, payload):
             print(f"[SEND ERROR] {e}")
             # break
         time.sleep(1)      
-        
-        
-        
+             
 # Receive Function
 def receive_data(conn_mgr):     
     buffer = ""

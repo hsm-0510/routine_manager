@@ -81,7 +81,7 @@ class TCPConnectionManager:
                 continue
 
             try:
-                opcua_update.update_opc_elements(opc, sock)
+                opcua_update.update_opc_elements(opc)
             except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError, OSError) as e:
                 print(f"OPCUA update lost TCP connection: {e}")
                 conn_mgr.mark_disconnected()

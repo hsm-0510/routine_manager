@@ -8,6 +8,7 @@ from sample.opcua import opcua_client
 from sample.opcua import opcua_update
 from sample.tcpClient import tcp_client
 from sample.core import state_manager
+CYCLE_TIME = 0.5
 
 def scheduler1(opc, port, baudrate, timeout, idNum):
     # Establishing Device Connection
@@ -16,51 +17,71 @@ def scheduler1(opc, port, baudrate, timeout, idNum):
         print("Established Connection with Device 1")
     except:
         print(f"Could Not Open Serial Port {port}")
-        serial_client.disconnect_serial(ser)
+        # serial_client.disconnect_serial(ser)
     
     while True:
         try:
-            # Command / Response Record
-            responseA = serial_client.send_command(ser, commands.commands["handshake"])
-            responseB = serial_client.send_command(ser, commands.commands["gross_weight"])
-            responseC = serial_client.send_command(ser, commands.commands["tare_weight"])
-            responseD = serial_client.send_command(ser, commands.commands["net_weight"])
-            
-            # Updating Device Dictionary
+            start = time.time()
             if idNum == 0:
-                commands.response_device_1["handshakeResponse"] = parser.parse_handshakeResponse(responseA)
-                commands.response_device_1["signBit"] = parser.parse_signBit(responseB)
-                commands.response_device_1["grossWeight"] = parser.parse_grossWeight(responseB,
-                                                                                    parser.parse_signBit(responseB),
-                                                                                    parser.parse_decimalPoints(responseB))
-                tcp_client.update_payload(state_manager.tcp_payload, "gross_weight_entranceWB1", commands.response_device_1["grossWeight"])
-                opc.write_tag("Entrance_XK3190_DS8",
-                            "gross_weight_entranceWB1",
-                            str(commands.response_device_1["grossWeight"]))
-                commands.response_device_1["decimalPoints"] = parser.parse_decimalPoints(responseB)
-                # Terminal Output
-                print(f"Gross Weight Device 1: {parser.parse_grossWeight(responseB, commands.response_device_1["signBit"],
-                    commands.response_device_1["decimalPoints"])} kg")
+                # Response Record for Device 1
+                serial_client.record_serial_response(ser, "device1", opc)
             else:
-                commands.response_device_2["handshakeResponse"] = parser.parse_handshakeResponse(responseA)
-                commands.response_device_2["signBit"] = parser.parse_signBit(responseB)
-                commands.response_device_2["grossWeight"] = parser.parse_grossWeight(responseB,
-                                                                                    parser.parse_signBit(responseB),
-                                                                                    parser.parse_decimalPoints(responseB))
-                tcp_client.update_payload(state_manager.tcp_payload, "gross_weight_exitWB2", commands.response_device_2["grossWeight"])
-                opc.write_tag("Exit_XK3190_DS8",
-                            "gross_weight_exitWB2",
-                            str(commands.response_device_2["grossWeight"]))
-                commands.response_device_2["decimalPoints"] = parser.parse_decimalPoints(responseB)
-                # Terminal Output
-                print(f"Gross Weight Device 1: {parser.parse_grossWeight(responseB, commands.response_device_2["signBit"],
-                    commands.response_device_2["decimalPoints"])} kg")
+                # Response Record for Device 2
+                serial_client.record_serial_response(ser, "device2", opc)
             
             # Loop Delay
-            time.sleep(0.1)
-        
+            elapsed = time.time() - start
+            time.sleep(0, CYCLE_TIME - elapsed)
+            
         except Exception as e:
-            print(f"[SCHEDULER 1 ERROR]: {e}")
+            print(f"[SCHEDULER 1 ERROR: {e}]")
+            print("--- Error Log ---")
+            traceback.print_exc() 
+            print("-----------------")
+    
+    # while True:
+    #     try:
+    #         # Command / Response Record
+    #         responseA = serial_client.send_command(ser, commands.commands["handshake"])
+    #         responseB = serial_client.send_command(ser, commands.commands["gross_weight"])
+    #         responseC = serial_client.send_command(ser, commands.commands["tare_weight"])
+    #         responseD = serial_client.send_command(ser, commands.commands["net_weight"])
+            
+    #         # Updating Device Dictionary
+    #         if idNum == 0:
+    #             commands.response_device_1["handshakeResponse"] = parser.parse_handshakeResponse(responseA)
+    #             commands.response_device_1["signBit"] = parser.parse_signBit(responseB)
+    #             commands.response_device_1["grossWeight"] = parser.parse_grossWeight(responseB,
+    #                                                                                 parser.parse_signBit(responseB),
+    #                                                                                 parser.parse_decimalPoints(responseB))
+    #             tcp_client.update_payload(state_manager.tcp_payload, "gross_weight_entranceWB1", commands.response_device_1["grossWeight"])
+    #             opc.write_tag("Entrance_XK3190_DS8",
+    #                         "gross_weight_entranceWB1",
+    #                         str(commands.response_device_1["grossWeight"]))
+    #             commands.response_device_1["decimalPoints"] = parser.parse_decimalPoints(responseB)
+    #             # Terminal Output
+    #             print(f"Gross Weight Device 1: {parser.parse_grossWeight(responseB, commands.response_device_1["signBit"],
+    #                 commands.response_device_1["decimalPoints"])} kg")
+    #         else:
+    #             commands.response_device_2["handshakeResponse"] = parser.parse_handshakeResponse(responseA)
+    #             commands.response_device_2["signBit"] = parser.parse_signBit(responseB)
+    #             commands.response_device_2["grossWeight"] = parser.parse_grossWeight(responseB,
+    #                                                                                 parser.parse_signBit(responseB),
+    #                                                                                 parser.parse_decimalPoints(responseB))
+    #             tcp_client.update_payload(state_manager.tcp_payload, "gross_weight_exitWB2", commands.response_device_2["grossWeight"])
+    #             opc.write_tag("Exit_XK3190_DS8",
+    #                         "gross_weight_exitWB2",
+    #                         str(commands.response_device_2["grossWeight"]))
+    #             commands.response_device_2["decimalPoints"] = parser.parse_decimalPoints(responseB)
+    #             # Terminal Output
+    #             print(f"Gross Weight Device 2: {parser.parse_grossWeight(responseB, commands.response_device_2["signBit"],
+    #                 commands.response_device_2["decimalPoints"])} kg")
+            
+    #         # Loop Delay
+    #         time.sleep(0.1)
+        
+    #     except Exception as e:
+    #         print(f"[SCHEDULER 1 ERROR]: {e}")
 
 def scheduler2(opc, port1, baudrate1, timeout1, port2, baudrate2, timeout2):
     # Establishing Connection with Device 1
@@ -69,7 +90,7 @@ def scheduler2(opc, port1, baudrate1, timeout1, port2, baudrate2, timeout2):
         print("Established Connection with Device 1")
     except:
         print("Could Not Connect with Device 1")
-        serial_client.disconnect_serial(ser1)
+        # serial_client.disconnect_serial(ser1)
     
     # Establishing Connection with Device 2       
     try:
@@ -77,23 +98,20 @@ def scheduler2(opc, port1, baudrate1, timeout1, port2, baudrate2, timeout2):
         print("Established Connection with Device 2")
     except:
         print("Could Not Connect with Device 2")
-        serial_client.disconnect_serial(ser2)
+        # serial_client.disconnect_serial(ser2)
     
     while True:
         try:
+            start = time.time()
             # Response Record for Device 1
             serial_client.record_serial_response(ser1, "device1", opc)
             
             # Response Record for Device 2
             serial_client.record_serial_response(ser2, "device2", opc)
             
-            # # Terminal Output
-            # print(f"Gross Weight Device 1: {parser.parse_grossWeight(responseB1, commands.response_device_1["signBit"],
-            #     commands.response_device_1["decimalPoints"])} kg, Gross Weight Device 2: {parser.parse_grossWeight(responseB2,
-            #     commands.response_device_2["signBit"], commands.response_device_2["decimalPoints"])} kg")
-            
             # Loop Delay
-            time.sleep(1)
+            elapsed = time.time() - start
+            time.sleep(0, CYCLE_TIME - elapsed)
         
         except Exception as e:
             print(f"[SCHEDULER 2 ERROR: {e}]")
