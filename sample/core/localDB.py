@@ -108,7 +108,7 @@ def get_tare(rfid_data):
         """, (rfid_data,))   
     row = cursor.fetchone()
     conn.close()
-    return row
+    return row[0]
 
 # Get Final Weights (use tare, gross, net as variables to store)
 def get_weights(rfid_data):

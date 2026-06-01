@@ -37,8 +37,11 @@ def main():
         threading.Thread(target=tcp_client.send_data, args=(conn_mgr, state_manager.tcp_payload,), daemon=True).start()
         threading.Thread(target=tcp_client.receive_data, args=(conn_mgr,), daemon=True).start()
         
-        # Routine Thread
+        # Entrance Weighbridge Routine Thread
         threading.Thread(target=controller.process_automation1_entrance, args=(opc,), daemon=True).start()
+        
+        # Exit Weighbridge Routine Thread
+        threading.Thread(target=controller.process_automation1_exit, args=(opc,), daemon=True).start()
         
         # ML Inference Thread
         # threading.Thread(target=prediction.ml_inference_worker, args=(opc,engine,), daemon=True).start()
