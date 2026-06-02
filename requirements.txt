@@ -1,3 +1,7 @@
 pyserial
 opcua
-time
+pandas
+numpy
+joblib
+xboost
+scikit-learn
