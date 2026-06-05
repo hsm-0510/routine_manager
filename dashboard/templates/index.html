@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weighbridge Control Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; }
+:root {
+  --sidebar-width: 240px;
+  --header-height: 56px;
+  --bg-dark: #0a1628;
+  --bg-card: #111d32;
+  --bg-sidebar: #0d1b2a;
+  --border-color: #1e3a5f;
+  --text-primary: #ffffff;
+  --text-secondary: #b8c9e0;
+  --accent-blue: #2196f3;
+  --accent-green: #4caf50;
+  --accent-yellow: #ff9800;
+  --accent-red: #f44336;
+  --accent-purple: #9c27b0;
+}
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  overflow-x: hidden;
+}
+.sidebar {
+  position: fixed;
+  top: 0; left: 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-color);
+  z-index: 100;
+  overflow-y: auto;
+  transition: transform .3s;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+.sidebar-header {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+.sidebar-header h5 { margin: 0; font-weight: 700; font-size: 15px; color: var(--accent-blue); }
+.sidebar-header small { color: #8899bb; font-size: 11px; }
+.sidebar-section { padding: 8px 0; }
+.sidebar-label {
+  padding: 6px 16px 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #8899bb;
+  font-weight: 600;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  cursor: pointer;
+  color: #b8c9e0;
+  transition: all .15s;
+  font-size: 13px;
+  border-left: 3px solid transparent;
+}
+.nav-item:hover { background: rgba(33,150,243,.08); color: #ffffff; }
+.nav-item.active {
+  background: rgba(33,150,243,.12);
+  color: var(--accent-blue);
+  border-left-color: var(--accent-blue);
+}
+.nav-item i { font-size: 16px; width: 20px; text-align: center; }
+.main-wrapper {
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+}
+.header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: var(--header-height);
+  background: rgba(10,22,40,.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+}
+.header-bar .page-title { font-size: 16px; font-weight: 600; }
+.header-status { display: flex; align-items: center; gap: 16px; font-size: 12px; }
+.status-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+.status-dot.online { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+.status-dot.offline { background: var(--accent-red); box-shadow: 0 0 6px var(--accent-red); }
+.content-area {
+  padding: 20px 24px;
+}
+.page-section { display: none; }
+.page-section.active { display: block; }
+.section-header {
+  margin-bottom: 16px;
+}
+.section-header h2 { font-size: 20px; font-weight: 600; margin: 0; color: #ffffff; }
+.section-header p { color: #b8c9e0; font-size: 13px; margin: 2px 0 0; }
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+.card-header {
+  background: transparent;
+  border-bottom: 1px solid var(--border-color);
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #ffffff;
+}
+.card-body { padding: 16px; }
+.tag-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(30,58,95,.4);
+  font-size: 13px;
+}
+.tag-row:last-child { border-bottom: none; }
+.tag-label { color: #ffffff; }
+.tag-label-sub { color: #7a9bb5; font-size: 10px; font-family: 'SF Mono','Consolas',monospace; margin-left: 6px; }
+.tag-value {
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-weight: 500;
+  color: #ffffff;
+}
+.tag-value.status-on { color: var(--accent-green); }
+.tag-value.status-off { color: var(--accent-red); }
+.tag-value.status-warn { color: var(--accent-yellow); }
+.ml-disabled {
+  position: relative;
+  filter: blur(4px) grayscale(0.6);
+  pointer-events: none;
+  user-select: none;
+}
+.ml-disabled-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  filter: none;
+}
+.ml-disabled-badge {
+  background: rgba(0,0,0,.75);
+  border: 1px solid var(--accent-yellow);
+  border-radius: 8px;
+  padding: 12px 24px;
+  text-align: center;
+  color: #fff;
+}
+.ml-disabled-badge i { font-size: 28px; display: block; margin-bottom: 6px; color: var(--accent-yellow); }
+.ml-disabled-badge span { font-size: 13px; }
+.overview-stat {
+  text-align: center;
+  padding: 16px 8px;
+}
+.overview-stat .stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+.overview-stat .stat-label {
+  font-size: 11px;
+  color: #b8c9e0;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-top: 4px;
+}
+.overview-stat .stat-icon { font-size: 24px; margin-bottom: 8px; }
+.btn-write {
+  background: var(--accent-blue);
+  border: none;
+  color: #fff;
+  padding: 2px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.btn-write:hover { opacity: .8; }
+.btn-write.btn-green { background: var(--accent-green); }
+.btn-write.btn-red { background: var(--accent-red); }
+.btn-write.btn-yellow { background: var(--accent-yellow); }
+.prob-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,.08);
+  margin-top: 4px;
+  overflow: hidden;
+}
+.prob-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .5s;
+}
+.chart-container { position: relative; height: 180px; }
+.table-custom {
+  font-size: 12px;
+}
+.table-custom th {
+  color: #ffffff;
+  font-weight: 600;
+  border-color: var(--border-color);
+  background: rgba(0,0,0,.2);
+}
+.table-custom td {
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+.table-custom tbody tr:hover { background: rgba(33,150,243,.05); }
+.badge-ml { font-size: 11px; padding: 3px 8px; }
+.toast-container {
+  position: fixed;
+  bottom: 20px; right: 20px;
+  z-index: 9999;
+}
+.toast-notification {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 8px;
+  min-width: 280px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.4);
+  animation: slideIn .3s;
+}
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main-wrapper { margin-left: 0; }
+  .header-bar { padding: 0 12px; }
+  .content-area { padding: 12px; }
+  .sidebar-toggle { display: block !important; }
+}
+.sidebar-toggle { display: none; background: none; border: none; color: var(--text-primary); font-size: 20px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h5><i class="bi bi-truck"></i> Weighbridge</h5>
+    <small>Control Dashboard</small>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Overview</div>
+    <div class="nav-item active" data-page="overview"><i class="bi bi-speedometer2"></i> Dashboard</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Weighbridges</div>
+    <div class="nav-item" data-page="entrance"><i class="bi bi-arrow-right-circle"></i> Entrance WB1</div>
+    <div class="nav-item" data-page="exit"><i class="bi bi-arrow-left-circle"></i> Exit WB2</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Lane Control</div>
+    <div class="nav-item" data-page="lane-monitor"><i class="bi bi-camera-video"></i> Monitoring</div>
+    <div class="nav-item" data-page="lane-control"><i class="bi bi-sliders"></i> Control</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Peripherals</div>
+    <div class="nav-item" data-page="camera"><i class="bi bi-camera"></i> Camera Detection</div>
+    <div class="nav-item" data-page="rfid"><i class="bi bi-upc-scan"></i> RFID Scanner</div>
+    <div class="nav-item" data-page="kiosk"><i class="bi bi-printer"></i> KIOSK</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">ERP & ML</div>
+    <div class="nav-item" data-page="sap"><i class="bi bi-database"></i> SAP Data</div>
+    <div class="nav-item" data-page="ml"><i class="bi bi-graph-up-arrow"></i> ML Predictions</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">History</div>
+    <div class="nav-item" data-page="weighments"><i class="bi bi-table"></i> Weighments</div>
+  </div>
+</div>
+
+<div class="main-wrapper">
+  <div class="header-bar">
+    <div>
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+      <span class="page-title" id="pageTitle">Dashboard</span>
+    </div>
+    <div class="header-status">
+      <span><span class="status-dot online" id="opcStatusDot"></span> <span id="opcStatusText">OPC UA</span></span>
+      <span><span class="status-dot online" id="wsStatusDot"></span> <span id="wsStatusText">WebSocket</span></span>
+      <span id="clockDisplay" style="color:#ffffff">--:--:--</span>
+    </div>
+  </div>
+
+  <div class="content-area">
+    <!-- OVERVIEW -->
+    <div class="page-section active" id="page-overview">
+      <div class="section-header">
+        <h2>Dashboard Overview</h2>
+        <p>Live status of all weighbridge subsystems</p>
+      </div>
+      <div class="row g-3" id="overviewCards">
+        <div class="col-6 col-md-3">
+          <div class="card">
+            <div class="card-body overview-stat">
+              <div class="stat-icon"><i class="bi bi-arrow-right-circle" style="color:var(--accent-blue)"></i></div>
+              <div class="stat-value" id="ov-ent-weight">--</div>
+              <div class="stat-label">Entrance Weight</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card">
+            <div class="card-body overview-stat">
+              <div class="stat-icon"><i class="bi bi-arrow-left-circle" style="color:var(--accent-yellow)"></i></div>
+              <div class="stat-value" id="ov-exit-weight">--</div>
+              <div class="stat-label">Exit Weight</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card">
+            <div class="card-body overview-stat">
+              <div class="stat-icon"><i class="bi bi-upc-scan" style="color:var(--accent-purple)"></i></div>
+              <div class="stat-value" id="ov-rfid">--</div>
+              <div class="stat-label">RFID Scans</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card">
+            <div class="card-body overview-stat">
+              <div class="stat-icon"><i class="bi bi-shield-check" style="color:var(--accent-green)"></i></div>
+              <div class="stat-value" id="ov-ml-status">--</div>
+              <div class="stat-label">ML Status</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-bar-chart"></i> Weight Trend</div>
+            <div class="card-body chart-container">
+              <canvas id="weightChart"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-shield"></i> ML Prediction Probabilities</div>
+            <div class="card-body" id="mlProbOverview">
+              <div style="text-align:center;color:#b8c9e0;padding:40px 0">Waiting for ML data...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-layout-three-columns"></i> Entrance Status</div>
+            <div class="card-body" id="ov-entrance-status"><div style="color:#b8c9e0;font-size:13px">Waiting for data...</div></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-layout-three-columns"></i> Exit Status</div>
+            <div class="card-body" id="ov-exit-status"><div style="color:#b8c9e0;font-size:13px">Waiting for data...</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRANCE -->
+    <div class="page-section" id="page-entrance">
+      <div class="section-header">
+        <h2>Entrance Weighbridge WB1</h2>
+        <p>XK3190-DS8 indicator @ Entrance</p>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-info-circle"></i> Device Configuration</div>
+            <div class="card-body" id="ent-cfg"></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-weight"></i> Live Weight</div>
+            <div class="card-body">
+              <div style="font-size:48px;font-weight:700;font-family:monospace;text-align:center;padding:20px 0;color:var(--accent-blue)" id="ent-weight-display">--</div>
+              <div style="text-align:center;color:#b8c9e0;font-size:13px">Gross Weight (kg)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="bi bi-list-ul"></i> All Tags</div>
+        <div class="card-body" id="ent-all-tags"></div>
+      </div>
+    </div>
+
+    <!-- EXIT -->
+    <div class="page-section" id="page-exit">
+      <div class="section-header">
+        <h2>Exit Weighbridge WB2</h2>
+        <p>XK3190-DS8 indicator @ Exit</p>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-info-circle"></i> Device Configuration</div>
+            <div class="card-body" id="ext-cfg"></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-weight"></i> Live Weight</div>
+            <div class="card-body">
+              <div style="font-size:48px;font-weight:700;font-family:monospace;text-align:center;padding:20px 0;color:var(--accent-yellow)" id="ext-weight-display">--</div>
+              <div style="text-align:center;color:#b8c9e0;font-size:13px">Gross Weight (kg)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="bi bi-list-ul"></i> All Tags</div>
+        <div class="card-body" id="ext-all-tags"></div>
+      </div>
+    </div>
+
+    <!-- LANE MONITORING -->
+    <div class="page-section" id="page-lane-monitor">
+      <div class="section-header">
+        <h2>Lane Monitoring</h2>
+        <p>IR sensors and barrier status from Waveshare ESP32</p>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-sensor"></i> Entrance Lane Sensors</div>
+            <div class="card-body" id="lane-mon-ent"></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-sensor"></i> Exit Lane Sensors</div>
+            <div class="card-body" id="lane-mon-ext"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="bi bi-list-ul"></i> All Monitoring Tags</div>
+        <div class="card-body" id="lane-mon-all"></div>
+      </div>
+    </div>
+
+    <!-- LANE CONTROL -->
+    <div class="page-section" id="page-lane-control">
+      <div class="section-header">
+        <h2>Lane Barrier Control</h2>
+        <p>Manual override for entrance/exit lane barriers (Waveshare relays)</p>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-lock"></i> Entrance Barrier</div>
+            <div class="card-body" id="lane-ctl-ent"></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-lock"></i> Exit Barrier</div>
+            <div class="card-body" id="lane-ctl-ext"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="bi bi-list-ul"></i> All Control Tags</div>
+        <div class="card-body" id="lane-ctl-all"></div>
+      </div>
+    </div>
+
+    <!-- CAMERA -->
+    <div class="page-section" id="page-camera">
+      <div class="section-header">
+        <h2>Camera Detection</h2>
+        <p>Driver absence and vehicle alignment status</p>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-camera"></i> Entrance</div>
+            <div class="card-body" id="cam-ent"></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-camera"></i> Exit</div>
+            <div class="card-body" id="cam-ext"></div>
+          </div>
+        </div>
+      </div>
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-webcam"></i> Camera Feed</div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6 col-6">
+                  <div class="d-flex align-items-center justify-content-center" style="min-height:220px;background:rgba(0,0,0,.4);border-radius:8px;border:1px solid var(--border-color);text-align:center;color:#b8c9e0;flex-direction:column">
+                    <i class="bi bi-camera" style="font-size:40px;opacity:.5;margin-bottom:8px"></i>
+                    <span style="font-size:13px">Entrance CAM1</span>
+                  </div>
+                </div>
+                <div class="col-md-6 col-6">
+                  <div class="d-flex align-items-center justify-content-center" style="min-height:220px;background:rgba(0,0,0,.4);border-radius:8px;border:1px solid var(--border-color);text-align:center;color:#b8c9e0;flex-direction:column">
+                    <i class="bi bi-camera" style="font-size:40px;opacity:.5;margin-bottom:8px"></i>
+                    <span style="font-size:13px">Entrance CAM2</span>
+                  </div>
+                </div>
+                <div class="col-md-6 col-6">
+                  <div class="d-flex align-items-center justify-content-center" style="min-height:220px;background:rgba(0,0,0,.4);border-radius:8px;border:1px solid var(--border-color);text-align:center;color:#b8c9e0;flex-direction:column">
+                    <i class="bi bi-camera" style="font-size:40px;opacity:.5;margin-bottom:8px"></i>
+                    <span style="font-size:13px">Exit CAM1</span>
+                  </div>
+                </div>
+                <div class="col-md-6 col-6">
+                  <div class="d-flex align-items-center justify-content-center" style="min-height:220px;background:rgba(0,0,0,.4);border-radius:8px;border:1px solid var(--border-color);text-align:center;color:#b8c9e0;flex-direction:column">
+                    <i class="bi bi-camera" style="font-size:40px;opacity:.5;margin-bottom:8px"></i>
+                    <span style="font-size:13px">Exit CAM2</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RFID -->
+    <div class="page-section" id="page-rfid">
+      <div class="section-header">
+        <h2>RFID Scanner</h2>
+        <p>Vehicle identification via RFID tags</p>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-upc-scan"></i> Entrance RFID</div>
+            <div class="card-body" id="rfid-ent"></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-upc-scan"></i> Exit RFID</div>
+            <div class="card-body" id="rfid-ext"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KIOSK -->
+    <div class="page-section" id="page-kiosk">
+      <div class="section-header">
+        <h2>KIOSK Terminal</h2>
+        <p>Card reader, receipt printing and display data</p>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-credit-card"></i> Cards & Buttons</div>
+            <div class="card-body" id="kiosk-inputs"></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-printer"></i> Print Control</div>
+            <div class="card-body" id="kiosk-print"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="bi bi-receipt"></i> Receipt Data</div>
+        <div class="card-body" id="kiosk-receipt"></div>
+      </div>
+    </div>
+
+    <!-- SAP -->
+    <div class="page-section" id="page-sap">
+      <div class="section-header">
+        <h2>SAP Data</h2>
+        <p>Trailer and batch information from ERP</p>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-truck"></i> Trailer Info</div>
+            <div class="card-body" id="sap-trailer"></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-box-seam"></i> Quantities</div>
+            <div class="card-body" id="sap-quantities"></div>
+          </div>
+        </div>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-clock"></i> Batch Times</div>
+            <div class="card-body" id="sap-times"></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-pin"></i> Compartment</div>
+            <div class="card-body" id="sap-compartment"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ML -->
+    <div class="page-section" id="page-ml">
+      <div class="section-header">
+        <h2>ML Predictions</h2>
+        <p>XGBoost-based anomaly detection for trailer weighments</p>
+      </div>
+  <div class="row g-3">
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header"><i class="bi bi-tag"></i> Predicted Case</div>
+        <div class="card-body text-center" style="padding:24px">
+          <div style="font-size:36px;font-weight:700;font-family:monospace" id="ml-predicted-case">--</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header"><i class="bi bi-bar-chart"></i> Prediction Probabilities</div>
+        <div class="card-body" id="ml-probs"></div>
+      </div>
+    </div>
+  </div>
+  <div id="ml-disabled-msg" style="display:none"></div>
+</div>
+
+    <!-- WEIGHMENTS -->
+    <div class="page-section" id="page-weighments">
+      <div class="section-header">
+        <h2>Weighment History</h2>
+        <p>Recent weighment records from local database</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span><i class="bi bi-table"></i> Records</span>
+          <button class="btn-write" onclick="loadWeighments()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+        </div>
+        <div class="card-body p-0">
+          <div style="overflow-x:auto">
+            <table class="table table-custom table-dark table-hover mb-0" id="weighments-table">
+              <thead>
+                <tr>
+                  <th>#</th><th>RFID</th><th>Card</th><th>Tare (kg)</th><th>Gross (kg)</th><th>Net (kg)</th>
+                </tr>
+              </thead>
+              <tbody id="weighments-body">
+                <tr><td colspan="6" style="text-align:center;color:#b8c9e0;padding:24px">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const CATEGORY_MAP = {
+  'Entrance_XK3190_DS8': 'entrance',
+  'Exit_XK3190_DS8': 'exit',
+  'Waveshare_Monitoring': 'lane-monitor',
+  'Waveshare_Controlling': 'lane-control',
+  'Camera_Detection': 'camera',
+  'RFID_Scanner': 'rfid',
+  'KIOSK': 'kiosk',
+  'SAP_DATA': 'sap'
+};
+
+const TAG_LABELS = {
+  deviceName_entranceWB1: 'Device Name', isActive_entranceWB1: 'Active', deviceID_entranceWB1: 'Device ID',
+  comPort_entranceWB1: 'COM Port', baudrate_entranceWB1: 'Baud Rate', timeout_entranceWB1: 'Timeout',
+  pollingInterval_entranceWB1: 'Poll Interval', gross_weight_entranceWB1: 'Gross Weight',
+  weight_capture_entranceControl1: 'Weight Capture',
+  deviceName_exitWB2: 'Device Name', isActive_exitWB2: 'Active', deviceID_exitWB2: 'Device ID',
+  comPort_exitWB2: 'COM Port', baudrate_exitWB2: 'Baud Rate', timeout_exitWB2: 'Timeout',
+  pollingInterval_exitWB2: 'Poll Interval', gross_weight_exitWB2: 'Gross Weight',
+  weight_capture_exitControl2: 'Weight Capture',
+  irSens_01_entranceLB: 'IR Sensor 1', irSens_02_entranceLB: 'IR Sensor 2', irSens_03_entranceLB: 'IR Sensor 3',
+  irSens_01_exitLB: 'IR Sensor 1', irSens_02_exitLB: 'IR Sensor 2', irSens_03_exitLB: 'IR Sensor 3',
+  entranceLB_status: 'Barrier Status', exitLB_status: 'Barrier Status',
+  open_entranceLB: 'Open Barrier', close_entranceLB: 'Close Barrier',
+  open_exitLB: 'Open Barrier', close_exitLB: 'Close Barrier',
+  channel_5: 'Channel 5', channel_6: 'Channel 6', channel_7: 'Channel 7', channel_8: 'Channel 8',
+  driver_absence_status_camera_ent: 'Driver Absence', vehicle_alignment_status_camera_ent: 'Vehicle Alignment',
+  driver_absence_status_camera_ext: 'Driver Absence', vehicle_alignment_status_camera_ext: 'Vehicle Alignment',
+  dataRFID_Entrance: 'RFID Data', dataRFID_Exit: 'RFID Data',
+  scan_status_rfid1: 'Scan Status', scan_status_rfid2: 'Scan Status',
+  kiosk_button_entrance: 'Button', kiosk_button_exit: 'Button',
+  kiosk_print_control_entrance: 'Print Control', kiosk_print_control_exit: 'Print Control',
+  cardData_entrance: 'Card Data', cardData_exit: 'Card Data',
+  receiptData_1: 'Line 1', receiptData_2: 'Line 2', receiptData_3: 'Line 3',
+  receiptData_4: 'Line 4', receiptData_5: 'Line 5', receiptData_6: 'Line 6',
+  SAP_trailer_complete_status: 'Complete Status', SAP_trailer_code: 'Trailer Code',
+  SAP_ordered_quantity: 'Ordered Qty', SAP_gross_quantity: 'Gross Qty',
+  SAP_batch_start_time: 'Start Time', SAP_batch_end_time: 'End Time',
+  SAP_compartment_number: 'Comp #', SAP_compartment_name: 'Comp Name',
+  SAP_trailer_net_weight: 'Net Weight', SAP_expected_net_weight: 'Expected Net',
+  SAP_material_density: 'Density', SAP_PREDICTED_CASE: 'Predicted Case',
+  SAP_PROB_NORMAL: 'Normal', SAP_PROB_THEFT: 'Theft',
+  SAP_PROB_DRIFT: 'Drift', SAP_PROB_MISSING: 'Missing'
+};
+
+const WRITABLE_TAGS = {
+  'Waveshare_Controlling': ['open_entranceLB','close_entranceLB','open_exitLB','close_exitLB','channel_5','channel_6','channel_7','channel_8'],
+  'KIOSK': ['kiosk_print_control_entrance','kiosk_print_control_exit','kiosk_button_entrance','kiosk_button_exit','cardData_entrance','cardData_exit'],
+  'Camera_Detection': ['driver_absence_status_camera_ent','vehicle_alignment_status_camera_ent','driver_absence_status_camera_ext','vehicle_alignment_status_camera_ext'],
+  'RFID_Scanner': ['dataRFID_Entrance','dataRFID_Exit']
+};
+
+const ON_VALUES = ['1','true','yes','on','active'];
+const OFF_VALUES = ['0','false','no','off','inactive'];
+
+let tagData = {};
+let weightHistory = [];
+let weightChart = null;
+let ws = null;
+let wsReconnectTimer = null;
+
+function initWebSocket() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}/ws`);
+  ws.onopen = () => {
+    document.getElementById('wsStatusDot').className = 'status-dot online';
+    document.getElementById('wsStatusText').textContent = 'WebSocket: Connected';
+    if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
+  };
+  ws.onclose = () => {
+    document.getElementById('wsStatusDot').className = 'status-dot offline';
+    document.getElementById('wsStatusText').textContent = 'WebSocket: Disconnected';
+    wsReconnectTimer = setTimeout(initWebSocket, 3000);
+  };
+  ws.onerror = () => ws && ws.close();
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'init' || msg.type === 'update') {
+        tagData = msg.data || {};
+        updateAll();
+        updateOPCStatus();
+      }
+    } catch(err) {}
+  };
+}
+
+function updateOPCStatus() {
+  const hasData = Object.keys(tagData).length > 0;
+  document.getElementById('opcStatusDot').className = hasData ? 'status-dot online' : 'status-dot offline';
+  document.getElementById('opcStatusText').textContent = hasData ? 'OPC UA: Connected' : 'OPC UA: No Data';
+}
+
+function getTag(category, tag) {
+  return tagData[category] && tagData[category][tag] !== undefined ? tagData[category][tag] : '--';
+}
+
+function sapDataAvailable() {
+  const code = getTag('SAP_DATA', 'SAP_trailer_code');
+  return code !== '--' && code !== '' && code !== '00000000';
+}
+
+function boolClass(val) {
+  const s = String(val).toLowerCase().trim();
+  if (ON_VALUES.includes(s)) return 'status-on';
+  if (OFF_VALUES.includes(s)) return 'status-off';
+  return '';
+}
+
+function boolIcon(val, trueIcon='bi-check-circle-fill', falseIcon='bi-x-circle-fill') {
+  const s = String(val).toLowerCase().trim();
+  const icon = ON_VALUES.includes(s) ? trueIcon : OFF_VALUES.includes(s) ? falseIcon : 'bi-question-circle';
+  const cls = ON_VALUES.includes(s) ? 'status-on' : OFF_VALUES.includes(s) ? 'status-off' : 'status-warn';
+  return `<i class="bi ${icon} ${cls}"></i>`;
+}
+
+function renderTagRow(label, value, writable=false, category='', tag='') {
+  const v = value === undefined || value === null || value === '' ? '--' : value;
+  let valHtml = `<span class="tag-value ${boolClass(v)}">${v}</span>`;
+  if (writable) {
+    valHtml = `<div class="d-flex align-items-center gap-2">
+      <span class="tag-value ${boolClass(v)}" id="tv-${category}-${tag}">${v}</span>
+      <button class="btn-write btn-green" onclick="writeTag('${category}','${tag}','1')">ON</button>
+      <button class="btn-write btn-red" onclick="writeTag('${category}','${tag}','0')">OFF</button>
+    </div>`;
+  }
+  const labelStr = TAG_LABELS[tag] || tag;
+  const tagNameDisplay = tag ? `<span class="tag-label-sub">[${tag}]</span>` : '';
+  return `<div class="tag-row"><span class="tag-label">${labelStr} ${tagNameDisplay}</span>${valHtml}</div>`;
+}
+
+function renderTagInput(label, value, category, tag) {
+  const v = value === undefined || value === null || value === '' ? '--' : value;
+  const labelStr = TAG_LABELS[tag] || tag;
+  const tagNameDisplay = tag ? `<span class="tag-label-sub">[${tag}]</span>` : '';
+  const id = `ti-${category}-${tag}`;
+  return `<div class="tag-row">
+    <span class="tag-label">${labelStr} ${tagNameDisplay}</span>
+    <div class="d-flex align-items-center gap-2">
+      <span class="tag-value" id="tv-${category}-${tag}">${v}</span>
+      <input type="text" id="${id}" class="tag-input" placeholder="value" style="background:rgba(255,255,255,.1);border:1px solid var(--border-color);border-radius:4px;color:#fff;padding:2px 6px;font-size:12px;width:100px;font-family:monospace">
+      <button class="btn-write" onclick="writeTag('${category}','${tag}',document.getElementById('${id}').value)">SET</button>
+    </div>
+  </div>`;
+}
+
+async function writeTag(category, tag, value) {
+  try {
+    const resp = await fetch(`/api/tags/${category}/${tag}?value=${encodeURIComponent(value)}`, { method: 'POST' });
+    const data = await resp.json();
+    if (resp.ok) {
+      showToast(`Written: ${category}.${tag} = ${value}`, 'success');
+    } else {
+      showToast(`Write failed: ${data.detail || 'Unknown error'}`, 'danger');
+    }
+  } catch(e) {
+    showToast(`Write error: ${e.message}`, 'danger');
+  }
+}
+
+function showToast(msg, type='info') {
+  const container = document.getElementById('toastContainer');
+  const colors = { success: '#4caf50', danger: '#f44336', info: '#2196f3', warning: '#ff9800' };
+  const el = document.createElement('div');
+  el.className = 'toast-notification';
+  el.style.borderLeft = `4px solid ${colors[type] || colors.info}`;
+  el.innerHTML = `<div style="font-size:13px">${msg}</div>`;
+  container.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .5s'; setTimeout(() => el.remove(), 500); }, 3000);
+}
+
+function updateAll() {
+  updateOverview();
+  updateEntrance();
+  updateExit();
+  updateLaneMonitor();
+  updateLaneControl();
+  updateCamera();
+  updateRFID();
+  updateKiosk();
+  updateSAP();
+  updateML();
+  updateWeightChart();
+}
+
+function updateOverview() {
+  const ew = getTag('Entrance_XK3190_DS8','gross_weight_entranceWB1');
+  const xw = getTag('Exit_XK3190_DS8','gross_weight_exitWB2');
+  const entEl = document.getElementById('ov-ent-weight');
+  entEl.textContent = ew !== '--' ? ew : '--';
+  entEl.style.color = ew !== '--' ? 'var(--accent-blue)' : '#ffffff';
+  const extEl = document.getElementById('ov-exit-weight');
+  extEl.textContent = xw !== '--' ? xw : '--';
+  extEl.style.color = xw !== '--' ? 'var(--accent-yellow)' : '#ffffff';
+  const rfidEnt = getTag('RFID_Scanner','dataRFID_Entrance');
+  const rfidExt = getTag('RFID_Scanner','dataRFID_Exit');
+  const rfidCount = (rfidEnt !== '--' && rfidEnt !== '00000000' ? 1 : 0) + (rfidExt !== '--' && rfidExt !== '00000000' ? 1 : 0);
+  document.getElementById('ov-rfid').textContent = rfidCount;
+  document.getElementById('ov-rfid').style.color = rfidCount > 0 ? 'var(--accent-green)' : '#ffffff';
+
+  // ML status
+  const mlEl = document.getElementById('ov-ml-status');
+  if (!sapDataAvailable()) {
+    mlEl.textContent = 'Unavailable';
+    mlEl.style.color = '#888';
+  } else {
+    const mlCase = getTag('SAP_DATA','SAP_PREDICTED_CASE');
+    mlEl.textContent = mlCase !== '--' ? mlCase : '--';
+    mlEl.style.color = mlCase === 'Normal' ? 'var(--accent-green)' : mlCase !== '--' ? 'var(--accent-yellow)' : '#ffffff';
+  }
+
+  // Entrance status overview
+  const ir1e = getTag('Waveshare_Monitoring','irSens_01_entranceLB');
+  const ir2e = getTag('Waveshare_Monitoring','irSens_02_entranceLB');
+  const ir3e = getTag('Waveshare_Monitoring','irSens_03_entranceLB');
+  const dae = getTag('Camera_Detection','driver_absence_status_camera_ent');
+  const vae = getTag('Camera_Detection','vehicle_alignment_status_camera_ent');
+  const lbOpenE = getTag('Waveshare_Controlling','open_entranceLB');
+  const lbCloseE = getTag('Waveshare_Controlling','close_entranceLB');
+  document.getElementById('ov-entrance-status').innerHTML = `
+    ${renderTagRow('IR 1', ir1e, false, 'Waveshare_Monitoring', 'irSens_01_entranceLB')}${renderTagRow('IR 2', ir2e, false, 'Waveshare_Monitoring', 'irSens_02_entranceLB')}${renderTagRow('IR 3', ir3e, false, 'Waveshare_Monitoring', 'irSens_03_entranceLB')}
+    ${renderTagRow('Driver Absence', dae, false, 'Camera_Detection', 'driver_absence_status_camera_ent')}${renderTagRow('Vehicle Alignment', vae, false, 'Camera_Detection', 'vehicle_alignment_status_camera_ent')}
+    ${renderTagRow('LB Open', lbOpenE, false, 'Waveshare_Controlling', 'open_entranceLB')}${renderTagRow('LB Close', lbCloseE, false, 'Waveshare_Controlling', 'close_entranceLB')}`;
+
+  const ir1x = getTag('Waveshare_Monitoring','irSens_01_exitLB');
+  const ir2x = getTag('Waveshare_Monitoring','irSens_02_exitLB');
+  const ir3x = getTag('Waveshare_Monitoring','irSens_03_exitLB');
+  const dax = getTag('Camera_Detection','driver_absence_status_camera_ext');
+  const vax = getTag('Camera_Detection','vehicle_alignment_status_camera_ext');
+  const lbOpenX = getTag('Waveshare_Controlling','open_exitLB');
+  const lbCloseX = getTag('Waveshare_Controlling','close_exitLB');
+  document.getElementById('ov-exit-status').innerHTML = `
+    ${renderTagRow('IR 1', ir1x, false, 'Waveshare_Monitoring', 'irSens_01_exitLB')}${renderTagRow('IR 2', ir2x, false, 'Waveshare_Monitoring', 'irSens_02_exitLB')}${renderTagRow('IR 3', ir3x, false, 'Waveshare_Monitoring', 'irSens_03_exitLB')}
+    ${renderTagRow('Driver Absence', dax, false, 'Camera_Detection', 'driver_absence_status_camera_ext')}${renderTagRow('Vehicle Alignment', vax, false, 'Camera_Detection', 'vehicle_alignment_status_camera_ext')}
+    ${renderTagRow('LB Open', lbOpenX, false, 'Waveshare_Controlling', 'open_exitLB')}${renderTagRow('LB Close', lbCloseX, false, 'Waveshare_Controlling', 'close_exitLB')}`;
+
+  // ML probabilities
+  updateMLProbOverview();
+}
+
+function updateMLProbOverview() {
+  const probsDiv = document.getElementById('mlProbOverview');
+  const pn = getTag('SAP_DATA','SAP_PROB_NORMAL');
+  const pt = getTag('SAP_DATA','SAP_PROB_THEFT');
+  const pd = getTag('SAP_DATA','SAP_PROB_DRIFT');
+  const pm = getTag('SAP_DATA','SAP_PROB_MISSING');
+  const hasProbs = pn !== '--' || pt !== '--' || pd !== '--' || pm !== '--';
+  if (!sapDataAvailable() || !hasProbs) {
+    probsDiv.innerHTML = '<div style="position:relative;min-height:140px;display:flex;align-items:center;justify-content:center"><div class="ml-disabled-badge"><i class="bi bi-database-slash"></i><span>SAP Data Unavailable</span></div></div>';
+    return;
+  }
+  const items = [
+    {label:'Normal', val: parseFloat(pn) || 0, color:'#4caf50'},
+    {label:'Theft', val: parseFloat(pt) || 0, color:'#f44336'},
+    {label:'Drift', val: parseFloat(pd) || 0, color:'#ff9800'},
+    {label:'Missing', val: parseFloat(pm) || 0, color:'#9c27b0'}
+  ];
+  probsDiv.innerHTML = items.map(i => `
+    <div class="tag-row">
+      <span class="tag-label">${i.label}</span>
+      <div style="flex:1;margin:0 12px"><div class="prob-bar"><div class="prob-bar-fill" style="width:${(i.val*100).toFixed(1)}%;background:${i.color}"></div></div></div>
+      <span class="tag-value" style="min-width:50px;text-align:right">${(i.val*100).toFixed(1)}%</span>
+    </div>
+  `).join('');
+}
+
+function updateEntrance() {
+  const cfgKeys = ['deviceName_entranceWB1','isActive_entranceWB1','deviceID_entranceWB1','comPort_entranceWB1','baudrate_entranceWB1','timeout_entranceWB1','pollingInterval_entranceWB1','weight_capture_entranceControl1'];
+  document.getElementById('ent-cfg').innerHTML = cfgKeys.map(k => renderTagRow(TAG_LABELS[k] || k, getTag('Entrance_XK3190_DS8',k), false, 'Entrance_XK3190_DS8', k)).join('');
+  const w = getTag('Entrance_XK3190_DS8','gross_weight_entranceWB1');
+  document.getElementById('ent-weight-display').textContent = w !== '--' ? w + ' kg' : '-- kg';
+  const allTags = WEIGHBRIDGE_TAGS['Entrance_XK3190_DS8'] || [];
+  document.getElementById('ent-all-tags').innerHTML = allTags.map(t => renderTagRow(TAG_LABELS[t.name] || t.name, getTag('Entrance_XK3190_DS8',t.name), false, 'Entrance_XK3190_DS8', t.name)).join('');
+}
+
+function updateExit() {
+  const cfgKeys = ['deviceName_exitWB2','isActive_exitWB2','deviceID_exitWB2','comPort_exitWB2','baudrate_exitWB2','timeout_exitWB2','pollingInterval_exitWB2','weight_capture_exitControl2'];
+  document.getElementById('ext-cfg').innerHTML = cfgKeys.map(k => renderTagRow(TAG_LABELS[k] || k, getTag('Exit_XK3190_DS8',k), false, 'Exit_XK3190_DS8', k)).join('');
+  const w = getTag('Exit_XK3190_DS8','gross_weight_exitWB2');
+  document.getElementById('ext-weight-display').textContent = w !== '--' ? w + ' kg' : '-- kg';
+  const allTags = WEIGHBRIDGE_TAGS['Exit_XK3190_DS8'] || [];
+  document.getElementById('ext-all-tags').innerHTML = allTags.map(t => renderTagRow(TAG_LABELS[t.name] || t.name, getTag('Exit_XK3190_DS8',t.name), false, 'Exit_XK3190_DS8', t.name)).join('');
+}
+
+function updateLaneMonitor() {
+  const entTags = ['irSens_01_entranceLB','irSens_02_entranceLB','irSens_03_entranceLB','entranceLB_status'];
+  const extTags = ['irSens_01_exitLB','irSens_02_exitLB','irSens_03_exitLB','exitLB_status'];
+  document.getElementById('lane-mon-ent').innerHTML = entTags.map(t => {
+    const val = getTag('Waveshare_Monitoring',t);
+    return renderTagRow(TAG_LABELS[t] || t, val, false, 'Waveshare_Monitoring', t);
+  }).join('');
+  document.getElementById('lane-mon-ext').innerHTML = extTags.map(t => {
+    const val = getTag('Waveshare_Monitoring',t);
+    return renderTagRow(TAG_LABELS[t] || t, val, false, 'Waveshare_Monitoring', t);
+  }).join('');
+  const allTags = WEIGHBRIDGE_TAGS['Waveshare_Monitoring'] || [];
+  document.getElementById('lane-mon-all').innerHTML = allTags.map(t => renderTagRow(TAG_LABELS[t.name] || t.name, getTag('Waveshare_Monitoring',t.name), false, 'Waveshare_Monitoring', t.name)).join('');
+}
+
+function updateLaneControl() {
+  const entCtrl = ['open_entranceLB','close_entranceLB'];
+  const extCtrl = ['open_exitLB','close_exitLB'];
+  document.getElementById('lane-ctl-ent').innerHTML = entCtrl.map(t => renderTagRow(TAG_LABELS[t] || t, getTag('Waveshare_Controlling',t), true, 'Waveshare_Controlling', t)).join('');
+  document.getElementById('lane-ctl-ext').innerHTML = extCtrl.map(t => renderTagRow(TAG_LABELS[t] || t, getTag('Waveshare_Controlling',t), true, 'Waveshare_Controlling', t)).join('');
+  const allTags = WEIGHBRIDGE_TAGS['Waveshare_Controlling'] || [];
+  document.getElementById('lane-ctl-all').innerHTML = allTags.map(t => renderTagRow(TAG_LABELS[t.name] || t.name, getTag('Waveshare_Controlling',t.name), true, 'Waveshare_Controlling', t.name)).join('');
+}
+
+function updateCamera() {
+  const ent = ['driver_absence_status_camera_ent','vehicle_alignment_status_camera_ent'];
+  const ext = ['driver_absence_status_camera_ext','vehicle_alignment_status_camera_ext'];
+  document.getElementById('cam-ent').innerHTML = ent.map(t => renderTagRow(TAG_LABELS[t] || t, getTag('Camera_Detection',t), true, 'Camera_Detection', t)).join('');
+  document.getElementById('cam-ext').innerHTML = ext.map(t => renderTagRow(TAG_LABELS[t] || t, getTag('Camera_Detection',t), true, 'Camera_Detection', t)).join('');
+}
+
+function updateRFID() {
+  document.getElementById('rfid-ent').innerHTML =
+    renderTagInput('Entrance RFID Data', getTag('RFID_Scanner','dataRFID_Entrance'), 'RFID_Scanner', 'dataRFID_Entrance') +
+    renderTagRow('Scan Status', getTag('RFID_Scanner','scan_status_rfid1'), false, 'RFID_Scanner', 'scan_status_rfid1');
+  document.getElementById('rfid-ext').innerHTML =
+    renderTagInput('Exit RFID Data', getTag('RFID_Scanner','dataRFID_Exit'), 'RFID_Scanner', 'dataRFID_Exit') +
+    renderTagRow('Scan Status', getTag('RFID_Scanner','scan_status_rfid2'), false, 'RFID_Scanner', 'scan_status_rfid2');
+}
+
+function updateKiosk() {
+  const btnEnt = getTag('KIOSK','kiosk_button_entrance');
+  const btnExt = getTag('KIOSK','kiosk_button_exit');
+  const cardEnt = getTag('KIOSK','cardData_entrance');
+  const cardExt = getTag('KIOSK','cardData_exit');
+  document.getElementById('kiosk-inputs').innerHTML =
+    renderTagRow('Entrance Button', btnEnt, true, 'KIOSK', 'kiosk_button_entrance') +
+    renderTagRow('Exit Button', btnExt, true, 'KIOSK', 'kiosk_button_exit') +
+    renderTagInput('Entrance Card Data', cardEnt, 'KIOSK', 'cardData_entrance') +
+    renderTagInput('Exit Card Data', cardExt, 'KIOSK', 'cardData_exit');
+  document.getElementById('kiosk-print').innerHTML =
+    renderTagRow('Entrance Print', getTag('KIOSK','kiosk_print_control_entrance'), true, 'KIOSK', 'kiosk_print_control_entrance') +
+    renderTagRow('Exit Print', getTag('KIOSK','kiosk_print_control_exit'), true, 'KIOSK', 'kiosk_print_control_exit');
+  const receipt = ['receiptData_1','receiptData_2','receiptData_3','receiptData_4','receiptData_5','receiptData_6'];
+  const receiptRows = receipt.map(t => renderTagRow(TAG_LABELS[t] || t, getTag('KIOSK',t), false, 'KIOSK', t)).join('');
+  const r1 = getTag('KIOSK','receiptData_1');
+  const r2 = getTag('KIOSK','receiptData_2');
+  const r3 = getTag('KIOSK','receiptData_3');
+  const r4 = getTag('KIOSK','receiptData_4');
+  const r5 = getTag('KIOSK','receiptData_5');
+  const r6 = getTag('KIOSK','receiptData_6');
+  document.getElementById('kiosk-receipt').innerHTML = `<div class="row">
+    <div class="col-md-6">${receiptRows}</div>
+    <div class="col-md-6">
+      <div style="background:#ffffff;border-radius:6px;padding:20px 24px;max-width:320px;margin:0 auto;font-family:'Courier New',monospace;color:#000;font-size:13px;line-height:1.6">
+        <div style="text-align:center;font-weight:700;font-size:16px;border-bottom:2px dashed #333;padding-bottom:8px;margin-bottom:8px">PSO</div>
+        <div>${r1 !== '--' ? r1 : ''}</div>
+        <div>${r2 !== '--' ? r2 : ''}</div>
+        <div>${r3 !== '--' ? r3 : ''}</div>
+        <div>${r4 !== '--' ? r4 : ''}</div>
+        <div>${r5 !== '--' ? r5 : ''}</div>
+        <div>${r6 !== '--' ? r6 : ''}</div>
+        <div style="text-align:center;border-top:2px dashed #333;padding-top:8px;margin-top:8px;font-size:11px;color:#666">Thank You</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function updateSAP() {
+  const trailer = ['SAP_trailer_complete_status','SAP_trailer_code'];
+  document.getElementById('sap-trailer').innerHTML = trailer.map(t => renderTagRow(TAG_LABELS[t] || t, getTag('SAP_DATA',t), false, 'SAP_DATA', t)).join('');
+  const qty = ['SAP_ordered_quantity','SAP_gross_quantity','SAP_expected_net_weight','SAP_trailer_net_weight'];
+  document.getElementById('sap-quantities').innerHTML = qty.map(t => renderTagRow(TAG_LABELS[t] || t, getTag('SAP_DATA',t), false, 'SAP_DATA', t)).join('');
+  const times = ['SAP_batch_start_time','SAP_batch_end_time'];
+  document.getElementById('sap-times').innerHTML = times.map(t => renderTagRow(TAG_LABELS[t] || t, getTag('SAP_DATA',t), false, 'SAP_DATA', t)).join('');
+  const comp = ['SAP_compartment_number','SAP_compartment_name','SAP_material_density'];
+  document.getElementById('sap-compartment').innerHTML = comp.map(t => renderTagRow(TAG_LABELS[t] || t, getTag('SAP_DATA',t), false, 'SAP_DATA', t)).join('');
+}
+
+function updateML() {
+  const mlPage = document.getElementById('page-ml');
+  const mlCase = getTag('SAP_DATA','SAP_PREDICTED_CASE');
+  const hasMlData = sapDataAvailable() && mlCase !== '--' && mlCase !== '';
+  if (!hasMlData) {
+    mlPage.querySelectorAll('.card').forEach(c => c.classList.add('ml-disabled'));
+    let msg = document.getElementById('ml-disabled-msg');
+    if (!msg) {
+      msg = document.createElement('div');
+      msg.id = 'ml-disabled-msg';
+      msg.className = 'ml-disabled-overlay';
+      msg.innerHTML = '<div class="ml-disabled-badge"><i class="bi bi-database-slash"></i><span>SAP Data Unavailable — ML predictions disabled</span></div>';
+      mlPage.querySelector('.row.g-3').parentNode.appendChild(msg);
+    }
+    msg.style.display = 'flex';
+    document.getElementById('ml-predicted-case').textContent = '--';
+    document.getElementById('ml-predicted-case').style.color = '#ffffff';
+    document.getElementById('ml-probs').innerHTML = '';
+    return;
+  }
+  mlPage.querySelectorAll('.card').forEach(c => c.classList.remove('ml-disabled'));
+  const msg = document.getElementById('ml-disabled-msg');
+  if (msg) msg.style.display = 'none';
+
+  const el = document.getElementById('ml-predicted-case');
+  el.textContent = mlCase !== '--' ? mlCase : '--';
+  if (mlCase === 'Normal') el.style.color = 'var(--accent-green)';
+  else if (mlCase === 'Theft') el.style.color = 'var(--accent-red)';
+  else if (mlCase === 'Drift') el.style.color = 'var(--accent-yellow)';
+  else if (mlCase === 'Missing') el.style.color = 'var(--accent-purple)';
+  else el.style.color = '#ffffff';
+
+  const probs = ['SAP_PROB_NORMAL','SAP_PROB_THEFT','SAP_PROB_DRIFT','SAP_PROB_MISSING'];
+  const labels = ['Normal','Theft','Drift','Missing'];
+  const colors = ['#4caf50','#f44336','#ff9800','#9c27b0'];
+  const vals = probs.map(p => parseFloat(getTag('SAP_DATA',p)) || 0);
+  document.getElementById('ml-probs').innerHTML = labels.map((lab,i) => {
+    const pct = (vals[i]*100).toFixed(1);
+    return `<div class="tag-row">
+      <span class="tag-label">${lab}</span>
+      <div style="flex:1;margin:0 12px"><div class="prob-bar"><div class="prob-bar-fill" style="width:${pct}%;background:${colors[i]}"></div></div></div>
+      <span class="tag-value" style="min-width:50px;text-align:right">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+function updateWeightChart() {
+  const ew = parseFloat(getTag('Entrance_XK3190_DS8','gross_weight_entranceWB1'));
+  const xw = parseFloat(getTag('Exit_XK3190_DS8','gross_weight_exitWB2'));
+  if (!isNaN(ew) || !isNaN(xw)) {
+    weightHistory.push({
+      time: new Date().toLocaleTimeString(),
+      entrance: isNaN(ew) ? null : ew,
+      exit: isNaN(xw) ? null : xw
+    });
+    if (weightHistory.length > 30) weightHistory.shift();
+  }
+  if (!weightChart) {
+    const ctx = document.getElementById('weightChart').getContext('2d');
+    weightChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: weightHistory.map(d => d.time),
+        datasets: [
+          { label: 'Entrance (kg)', data: weightHistory.map(d => d.entrance), borderColor: '#2196f3', backgroundColor: 'rgba(33,150,243,.1)', fill: true, tension: .3, pointRadius: 2 },
+          { label: 'Exit (kg)', data: weightHistory.map(d => d.exit), borderColor: '#ff9800', backgroundColor: 'rgba(255,152,0,.1)', fill: true, tension: .3, pointRadius: 2 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#b8c9e0', font: { size: 11 } } } },
+        scales: {
+          x: { ticks: { color: '#b8c9e0', font: { size: 10 }, maxTicksLimit: 10 }, grid: { color: 'rgba(30,58,95,.3)' } },
+          y: { ticks: { color: '#b8c9e0', font: { size: 10 } }, grid: { color: 'rgba(30,58,95,.3)' } }
+        }
+      }
+    });
+  } else {
+    weightChart.data.labels = weightHistory.map(d => d.time);
+    weightChart.data.datasets[0].data = weightHistory.map(d => d.entrance);
+    weightChart.data.datasets[1].data = weightHistory.map(d => d.exit);
+    weightChart.update('none');
+  }
+}
+
+function loadWeighments() {
+  fetch('/api/weighments?limit=50')
+    .then(r => r.json())
+    .then(data => {
+      const tbody = document.getElementById('weighments-body');
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#b8c9e0;padding:24px">No records found</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.map(r => `<tr>
+        <td>${r.id}</td>
+        <td style="font-family:monospace">${r.rfid_data || '--'}</td>
+        <td style="font-family:monospace">${r.card_data || '--'}</td>
+        <td style="font-family:monospace">${r.tare_weight ?? '--'}</td>
+        <td style="font-family:monospace">${r.gross_weight ?? '--'}</td>
+        <td style="font-family:monospace">${r.net_weight ?? '--'}</td>
+      </tr>`).join('');
+    })
+    .catch(() => {
+      document.getElementById('weighments-body').innerHTML = '<tr><td colspan="6" style="text-align:center;color:#b8c9e0;padding:24px">Failed to load</td></tr>';
+    });
+}
+
+// Navigation
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', function() {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    this.classList.add('active');
+    const page = this.dataset.page;
+    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById('page-' + page);
+    if (target) target.classList.add('active');
+    document.getElementById('pageTitle').textContent = this.textContent.trim();
+    if (page === 'weighments') loadWeighments();
+    if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+  });
+});
+
+document.getElementById('sidebarToggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+});
+
+function updateClock() {
+  document.getElementById('clockDisplay').textContent = new Date().toLocaleTimeString();
+}
+
+// Load weighbridge config to build tag lists
+let WEIGHBRIDGE_TAGS = {};
+fetch('/api/config').then(r => r.json()).then(config => {
+  (config.categories || []).forEach(cat => {
+    WEIGHBRIDGE_TAGS[cat.name] = cat.tags;
+  });
+}).catch(() => {});
+
+// Init
+setInterval(updateClock, 1000);
+updateClock();
+initWebSocket();
+
+// Fallback polling if WebSocket fails
+setInterval(async () => {
+  try {
+    const resp = await fetch('/api/tags');
+    const data = await resp.json();
+    if (data && Object.keys(data).length > 0) {
+      tagData = data;
+      updateAll();
+      updateOPCStatus();
+    }
+  } catch(e) {}
+}, 5000);
+</script>
+</body>
+</html>

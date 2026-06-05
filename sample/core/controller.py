@@ -13,8 +13,8 @@ def routine1(opc):
     print(f"Total Devices: {totalActiveDevices}, dev1_status: {dev1_status}, dev2_status: {dev2_status}")
     if totalActiveDevices == 0:
         print("No Active Devices")
-        opc.write_tag("Entrance_XK3190_DS8", "gross_weight_entranceWB1", "0")
-        opc.write_tag("Exit_XK3190_DS8", "gross_weight_exitWB2", "0")
+        opc.write_tag("Entrance_XK3190_DS8", "gross_weight_entranceWB1", "1000")
+        opc.write_tag("Exit_XK3190_DS8", "gross_weight_exitWB2", "1500")
     elif totalActiveDevices == 1 and dev1_status == 1:
         print("Device 1 is Active")
         scheduler.scheduler1(opc, serial_client.port1, serial_client.baudrate1, serial_client.timeout1, 0)
