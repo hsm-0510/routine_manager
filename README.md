@@ -1,8 +1,9 @@
+
 # Routine Manager
 
-## Smart Weighbridge Automation Platform
+## PSO Smart Weighbridge Automation Platform
 
-Routine Manager is a modular industrial automation framework designed to manage and coordinate the complete workflow of a smart weighbridge installation. The system integrates industrial weighing equipment, OPC UA infrastructure, TCP-connected field devices, SAP transaction data, RFID systems, kiosk operations, and machine-learning based anomaly detection into a single orchestrated platform.
+Routine Manager is a modular industrial automation framework designed to manage and coordinate the complete workflow of a smart weighbridge installation. The system integrates industrial weighing equipment, OPC UA infrastructure, TCP-connected field devices, SAP transaction data, RFID systems, kiosk operations, and machine-learning based anomaly detection into a single orchestrated platform. A real-time Smart Dashboard provides browser-based visualization and control for all subsystems.
 
 ---
 
@@ -18,15 +19,16 @@ Routine Manager is a modular industrial automation framework designed to manage 
 8. OPC UA Integration
 9. TCP Device Integration
 10. Machine Learning Pipeline
-11. Data Flow
-12. State Management
-13. Configuration
-14. Installation
-15. Development Workflow
-16. Testing
-17. Deployment Notes
-18. Troubleshooting
-19. Future Enhancements
+11. Smart Dashboard
+12. Data Flow
+13. State Management
+14. Configuration
+15. Installation
+16. Development Workflow
+17. Testing
+18. Deployment Notes
+19. Troubleshooting
+20. Future Enhancements
 
 ---
 
@@ -44,6 +46,7 @@ The primary goals are:
 - RFID and kiosk coordination
 - ML-based anomaly detection
 - OPC UA publishing for SCADA visibility
+- Real-time web dashboard for visualization and remote control
 
 The architecture is intentionally modular to allow independent development and testing of each subsystem.
 
@@ -75,6 +78,18 @@ The architecture is intentionally modular to allow independent development and t
                           |
                           v
                      SCADA System
+                          |
+                          v
++--------------------------------------------------+
+|                Smart Dashboard (Web)             |
+|--------------------------------------------------|
+| FastAPI Backend                                   |
+| WebSocket Real-Time Push                          |
+| Bootstrap 5 Single-Page Frontend                 |
++--------------------------------------------------+
+      |                |                |
+      v                v                v
+  Browser         Mobile           Embedded
 ```
 
 ---
@@ -91,6 +106,8 @@ The application is responsible for:
 - Processing SAP transactions
 - Running machine-learning predictions
 - Publishing operational status
+- Serving real-time dashboard data via WebSocket
+- Exposing REST API for tag read/write operations
 
 ---
 
@@ -102,6 +119,12 @@ routine_manager/
 ├── config/
 │   ├── system_config.json
 │   └── tcp_payload.json
+│
+├── dashboard/
+│   ├── app.py                          # FastAPI backend + WebSocket
+│   ├── templates/
+│   │   └── index.html                  # Single-page dashboard UI
+│   └── requirements.txt                # Dashboard dependencies
 │
 ├── docs/
 │
@@ -125,8 +148,13 @@ routine_manager/
 │   └── utils/
 │
 ├── tests/
+│   ├── test7_sap_opc.py                # Main entry point (runs all subsystems)
+│   └── ...
+│
+├── run_all.py                          # Launcher for project + dashboard
 ├── requirements.txt
-└── setup.py
+├── setup.py
+└── weighbridgeConfig.json              # OPC UA tag definitions
 ```
 
 ---
@@ -200,6 +228,23 @@ Allows operation even when external systems are unavailable.
 
 ---
 
+## Smart Dashboard (FastAPI + WebSocket)
+
+A real-time web-based visualization and control interface.
+
+Functions include:
+
+- REST API for reading all OPC UA tags
+- REST API for writing writable tags
+- WebSocket push for live tag updates (0.5 s polling interval)
+- Bootstrap 5 single-page frontend with sidebar navigation
+- Dashboard overview with key metrics (weights, RFID count, ML status)
+- Dedicated pages for each subsystem (Entrance, Exit, Lane, Camera, RFID, KIOSK, SAP, ML)
+
+The dashboard runs as an independent process alongside the main project.
+
+---
+
 # Communication Layers
 
 ## Serial Communication Layer
@@ -238,6 +283,7 @@ Used for:
 - SCADA visibility
 - Automation integration
 - Third-party connectivity
+- Dashboard data source
 
 ---
 
@@ -255,6 +301,24 @@ Capabilities:
 Primary use:
 
 - Waveshare ESP32-S3 communication
+
+---
+
+## WebSocket Layer (Dashboard)
+
+Real-time data push layer for the Smart Dashboard.
+
+Capabilities:
+
+- Persistent bidirectional connection
+- JSON-encoded tag value updates
+- Automatic reconnection on disconnect
+- 500 ms polling interval for OPC UA changes
+
+Used for:
+
+- Live dashboard updates without page refresh
+- Real-time visualization of weight changes, sensor states, and ML predictions
 
 ---
 
@@ -278,6 +342,8 @@ Collected values:
 - Net weight
 - Device status
 
+Dashboard displays entrance weight in blue and exit weight in orange for quick visual differentiation.
+
 ---
 
 # OPC UA Integration
@@ -293,11 +359,20 @@ Example information published:
 - Transaction state
 - ML prediction results
 
+The dashboard reads all tags from the same OPC UA server for real-time display.
+
+OPC UA server details:
+
+- Endpoint: `opc.tcp://127.0.0.1:5501/pso/weighbridge/`
+- Namespace URI: `urn:pso:smart-weighbridge`
+- Server object: `PSO Smart Weighbridge`
+
 Benefits:
 
 - Vendor-neutral communication
 - SCADA compatibility
 - Standardized industrial integration
+- Single data source for dashboard and SCADA
 
 ---
 
@@ -352,6 +427,9 @@ Prediction
    |
    v
 OPC UA Publication
+   |
+   v
+Dashboard Visualization
 ```
 
 ## Prediction Categories
@@ -367,6 +445,100 @@ Potential use cases:
 - Transaction verification
 - Fraud detection
 - Operational analysis
+
+Dashboard behavior when SAP data is unavailable:
+
+- Overview ML card shows "Unavailable" in grey
+- ML probability bars are replaced with "SAP Data Unavailable" badge
+- ML Predictions page shows blurred/disabled cards with overlay message
+
+---
+
+# Smart Dashboard
+
+## Overview
+
+The Smart Dashboard is a browser-based real-time visualization and control interface for the weighbridge system. It connects to the same OPC UA server that the main application publishes to, and displays live data across all subsystems.
+
+- **Framework:** FastAPI (backend), Vanilla JS + Bootstrap 5 (frontend)
+- **Real-time:** WebSocket push (500 ms poll interval)
+- **API:** REST endpoints for reading/writing tags
+- **Port:** `http://localhost:8000`
+
+## Dashboard Pages
+
+### Overview
+
+- Entrance weight (blue) and exit weight (orange) live display
+- Active RFID count
+- ML predicted case status
+- Compact entrance/exit status panels (IR sensors, driver absence, vehicle alignment, barrier control)
+- ML probability summary bars
+
+### Entrance WB1 / Exit WB2
+
+- Gross weight display (large font)
+- Device configuration parameters
+- Full tag list with values
+
+### Lane Monitoring
+
+- IR sensor states for entrance and exit
+- Light barrier status
+- Complete tag table
+
+### Lane Control
+
+- ON/OFF bypass controls for barrier open/close commands
+- Full tag list
+
+### Camera Detection
+
+- Driver absence and vehicle alignment status for both lanes
+- ON/OFF bypass controls (writable tags)
+
+### RFID Scanner
+
+- Entrance and Exit RFID data with text-input bypass (SET button)
+- Scan status indicators
+
+### KIOSK
+
+- Button ON/OFF bypass controls
+- Card data text-input bypass (SET button)
+- Print control ON/OFF bypass
+- Receipt data section with tag names/values on one side and white-background receipt preview with "PSO" title on the other
+
+### SAP Data
+
+- Trailer information, quantities, timing, and compartment details
+
+### ML Predictions
+
+- Predicted case display (color-coded: green=Normal, red=Theft, yellow=Drift, purple=Missing)
+- Probability bars for each prediction category
+- Cards are blurred with overlay when SAP data is unavailable
+
+### Weighments
+
+- Historical weight chart (entrance vs. exit) using Chart.js
+- Real-time chart updates
+
+## Graceful Degradation
+
+The dashboard handles missing subsystems gracefully:
+
+- **OPC UA server offline:** All tags show `--`, dashboard continues retrying
+- **SAP data unavailable:** ML sections show disabled/blurred state with "SAP Data Unavailable" badge; no probability values displayed
+- **Missing specific tags:** Individual tag values display `--` without breaking other sections
+
+## Writing Tags
+
+Writable tags can be modified directly from the dashboard:
+
+- **Toggle controls (ON/OFF):** Barrier open/close, camera detection status, KIOSK buttons, print control
+- **Text input + SET button:** RFID data, KIOSK card data
+- Writes are sent via `POST /api/tag/{category}/{tag}` with `{value: ...}` JSON body
 
 ---
 
@@ -393,7 +565,7 @@ State Manager
 OPC UA
      |
      v
-SCADA
+SCADA  +  Dashboard (WebSocket)
 ```
 
 ## SAP + ML Data
@@ -412,6 +584,9 @@ Prediction
        |
        v
 OPC UA
+       |
+       v
+Dashboard Visualization
 ```
 
 ---
@@ -451,6 +626,21 @@ Contains:
 - TCP settings
 - Polling parameters
 
+## weighbridgeConfig.json
+
+Defines all OPC UA tag categories, names, and writable status used by the dashboard.
+
+Categories include:
+
+- Entrance_XK3190_DS8
+- Exit_XK3190_DS8
+- Waveshare_Monitoring
+- Waveshare_Controlling
+- Camera_Detection
+- RFID_Scanner
+- KIOSK
+- SAP_DATA
+
 ## tcp_payload.json
 
 Defines the TCP payload structure exchanged with external devices.
@@ -476,11 +666,40 @@ cd routine_manager
 pip install -r requirements.txt
 ```
 
+## Install Dashboard Dependencies
+
+```bash
+pip install -r dashboard/requirements.txt
+```
+
 ## Install Package
 
 ```bash
 pip install -e .
 ```
+
+---
+
+# Running
+
+## Start All Components
+
+```bash
+python main.py
+```
+
+This launches:
+
+1. Main weighbridge application (`python -m tests.test7_sap_opc`)
+2. Smart Dashboard (`uvicorn dashboard.app:app --host 0.0.0.0 --port 8000`)
+
+## Start Dashboard Only
+
+```bash
+uvicorn dashboard.app:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Access the dashboard at `http://localhost:8000`.
 
 ---
 
@@ -537,6 +756,7 @@ Operational recommendations:
 - Monitor device health
 - Validate OPC UA connectivity
 - Backup configuration files
+- Ensure dashboard port (8000) is accessible on local network
 
 ---
 
@@ -559,6 +779,14 @@ Check:
 - Namespace configuration
 - Firewall settings
 
+## Dashboard Shows All Dashes
+
+Check:
+
+- OPC UA server is running
+- Dashboard port is not blocked by firewall
+- `weighbridgeConfig.json` tag names match server
+
 ## TCP Device Offline
 
 Check:
@@ -574,6 +802,15 @@ Check:
 - Model files exist
 - Feature generation logic
 - Input data integrity
+- SAP data availability in OPC UA server
+
+## Dashboard WebSocket Disconnected
+
+Check:
+
+- Dashboard process is running
+- No reverse proxy timeout
+- Browser console for errors
 
 ---
 
@@ -582,12 +819,15 @@ Check:
 Potential roadmap:
 
 - MQTT integration
-- REST API
 - Docker deployment
-- Web dashboard
-- Centralized monitoring
 - Multi-site synchronization
 - Predictive maintenance analytics
+- Historical data persistence in dashboard
+- User authentication for dashboard
+- Dark/light theme toggle
+- Mobile-responsive dashboard refinements
+- Export weighment reports (PDF/CSV)
+- Alarm and notification system
 
 ---
 
