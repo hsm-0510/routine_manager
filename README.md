@@ -1,7 +1,7 @@
 
 # Routine Manager
 
-## PSO Smart Weighbridge Automation Platform
+## Smart Weighbridge Automation Platform
 
 Routine Manager is a modular industrial automation framework designed to manage and coordinate the complete workflow of a smart weighbridge installation. The system integrates industrial weighing equipment, OPC UA infrastructure, TCP-connected field devices, SAP transaction data, RFID systems, kiosk operations, and machine-learning based anomaly detection into a single orchestrated platform. A real-time Smart Dashboard provides browser-based visualization and control for all subsystems.
 
