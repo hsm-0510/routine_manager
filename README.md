@@ -6,6 +6,10 @@ Routine Manager is a modular industrial automation framework designed to manage 
 
 ![1780651768000](image/README/1780651768000.png)
 
+![1780914776710](image/README/1780914776710.png)
+
+![1780914821241](image/README/1780914821241.png)
+
 ---
 
 # Table of Contents
