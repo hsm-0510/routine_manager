@@ -4,7 +4,13 @@ import os
 import time
 import threading
 
-BASE = os.path.dirname(os.path.abspath(__file__))
+#BASE = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, "frozen", False):
+    BASE = sys._MEIPASS      # PyInstaller extracted dir
+    PYTHON = sys.executable
+else:
+    BASE = os.path.dirname(os.path.abspath(__file__))
+    PYTHON = sys.executable
 procs = []
 
 def cleanup():
@@ -24,31 +30,51 @@ print("  Weighbridge System Launcher")
 print("=" * 60)
 
 # 1. Main project
+# main_proj = subprocess.Popen(
+#     [sys.executable, "-u", "-m", "tests.test7_sap_opc"],
+#     cwd=BASE,
+#     stdout=subprocess.PIPE,
+#     stderr=subprocess.STDOUT,
+#     text=True,
+#     bufsize=1
+# )
+# procs.append(main_proj)
 main_proj = subprocess.Popen(
-    [sys.executable, "-u", "-m", "tests.test7_sap_opc"],
-    cwd=BASE,
-    stdout=subprocess.PIPE,
-    stderr=subprocess.STDOUT,
-    text=True,
-    bufsize=1
+    [PYTHON, "-m", "tests.test7_sap_opc"],
+    cwd=BASE
 )
+
 procs.append(main_proj)
 
 # 2. Dashboard
-dashboard = subprocess.Popen(
-    [sys.executable, "-u", "app.py"],
-    cwd=os.path.join(BASE, "dashboard"),
-    stdout=subprocess.PIPE,
-    stderr=subprocess.STDOUT,
-    text=True,
-    bufsize=1
-)
-procs.append(dashboard)
+# dashboard = subprocess.Popen(
+#     [sys.executable, "-u", "app.py"],
+#     cwd=os.path.join(BASE, "dashboard"),
+#     stdout=subprocess.PIPE,
+#     stderr=subprocess.STDOUT,
+#     text=True,
+#     bufsize=1
+# )
+# procs.append(dashboard)
 
-print(f"[LAUNCHER] Main project started (PID: {main_proj.pid})")
-print(f"[LAUNCHER] Dashboard started (PID: {dashboard.pid})")
-print(f"[LAUNCHER] Dashboard at http://localhost:8000")
-print("[LAUNCHER] Press Ctrl+C to stop all\n")
+# print(f"[LAUNCHER] Main project started (PID: {main_proj.pid})")
+# print(f"[LAUNCHER] Dashboard started (PID: {dashboard.pid})")
+# print(f"[LAUNCHER] Dashboard at http://localhost:8000")
+# print("[LAUNCHER] Press Ctrl+C to stop all\n")
+# Dashboard
+dashboard_dir = os.path.join(BASE, "dashboard")
+dashboard_app = os.path.join(dashboard_dir, "app.py")
+
+print("BASE:", BASE)
+print("Dashboard exists:", os.path.exists(dashboard_dir))
+print("App exists:", os.path.exists(dashboard_app))
+
+dashboard = subprocess.Popen(
+    [PYTHON, dashboard_app],
+    cwd=dashboard_dir
+)
+
+procs.append(dashboard)
 
 def pipe_reader(stream, prefix):
     for line in iter(stream.readline, ""):

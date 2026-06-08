@@ -294,9 +294,9 @@ body {
     <div class="nav-item" data-page="kiosk"><i class="bi bi-printer"></i> KIOSK</div>
   </div>
   <div class="sidebar-section">
-    <div class="sidebar-label">ERP & ML</div>
+    <div class="sidebar-label">Data & Alerts</div>
     <div class="nav-item" data-page="sap"><i class="bi bi-database"></i> SAP Data</div>
-    <div class="nav-item" data-page="ml"><i class="bi bi-graph-up-arrow"></i> ML Predictions</div>
+    <div class="nav-item" data-page="ml"><i class="bi bi-graph-up-arrow"></i> Discrepancy & Alarms</div>
   </div>
   <div class="sidebar-section">
     <div class="sidebar-label">History</div>
@@ -357,7 +357,7 @@ body {
             <div class="card-body overview-stat">
               <div class="stat-icon"><i class="bi bi-shield-check" style="color:var(--accent-green)"></i></div>
               <div class="stat-value" id="ov-ml-status">--</div>
-              <div class="stat-label">ML Status</div>
+              <div class="stat-label">Alarm Status</div>
             </div>
           </div>
         </div>
@@ -373,7 +373,7 @@ body {
         </div>
         <div class="col-md-6">
           <div class="card">
-            <div class="card-header"><i class="bi bi-shield"></i> ML Prediction Probabilities</div>
+            <div class="card-header"><i class="bi bi-shield"></i>Weight Discrepancy Alarms</div>
             <div class="card-body" id="mlProbOverview">
               <div style="text-align:center;color:#b8c9e0;padding:40px 0">Waiting for ML data...</div>
             </div>
@@ -650,7 +650,7 @@ body {
     <!-- ML -->
     <div class="page-section" id="page-ml">
       <div class="section-header">
-        <h2>ML Predictions</h2>
+        <h2>Weight Discrepancy Alarms</h2>
         <p>XGBoost-based anomaly detection for trailer weighments</p>
       </div>
   <div class="row g-3">
@@ -688,7 +688,7 @@ body {
             <table class="table table-custom table-dark table-hover mb-0" id="weighments-table">
               <thead>
                 <tr>
-                  <th>#</th><th>RFID</th><th>Card</th><th>Tare (kg)</th><th>Gross (kg)</th><th>Net (kg)</th>
+                  <th>#</th><th>RFID</th><th>Card</th><th>Tare (kg)</th><th>Tare Time</th><th>Gross (kg)</th><th>Gross Time</th><th>Net (kg)</th><th>Net Time</th>
                 </tr>
               </thead>
               <tbody id="weighments-body">
@@ -736,11 +736,15 @@ const TAG_LABELS = {
   driver_absence_status_camera_ext: 'Driver Absence', vehicle_alignment_status_camera_ext: 'Vehicle Alignment',
   dataRFID_Entrance: 'RFID Data', dataRFID_Exit: 'RFID Data',
   scan_status_rfid1: 'Scan Status', scan_status_rfid2: 'Scan Status',
-  kiosk_button_entrance: 'Button', kiosk_button_exit: 'Button',
+  kiosk_button_entrance: 'Entrance Button', kiosk_button_exit: 'Exit Button',
   kiosk_print_control_entrance: 'Print Control', kiosk_print_control_exit: 'Print Control',
-  cardData_entrance: 'Card Data', cardData_exit: 'Card Data',
-  receiptData_1: 'Line 1', receiptData_2: 'Line 2', receiptData_3: 'Line 3',
-  receiptData_4: 'Line 4', receiptData_5: 'Line 5', receiptData_6: 'Line 6',
+  cardData_entrance: 'Entrance Card Data', cardData_exit: 'Exit Card Data',
+  receiptData_1_ent: 'Data1 Ent', receiptData_2_ent: 'Data2 Ent', receiptData_3_ent: 'Data3 Ent',
+  receiptData_4_ent: 'Data4 Ent', receiptData_5_ent: 'Data5 Ent', receiptData_6_ent: 'Data6 Ent',
+  receiptData_7_ent: 'Data7 Ent', receiptData_8_ent: 'Data8 Ent', receiptData_9_ent: 'Data9 Ent', receiptData_10_ent: 'Data10 Ent',
+  receiptData_1_ext: 'Data1 Ext', receiptData_2_ext: 'Data2 Ext', receiptData_3_ext: 'Data3 Ext',
+  receiptData_4_ext: 'Data4 Ext', receiptData_5_ext: 'Data5 Ext', receiptData_6_ext: 'Data6 Ext',
+  receiptData_7_ext: 'Data7 Ext', receiptData_8_ext: 'Data8 Ext', receiptData_9_ext: 'Data9 Ext', receiptData_10_ext: 'Data10 Ext',
   SAP_trailer_complete_status: 'Complete Status', SAP_trailer_code: 'Trailer Code',
   SAP_ordered_quantity: 'Ordered Qty', SAP_gross_quantity: 'Gross Qty',
   SAP_batch_start_time: 'Start Time', SAP_batch_end_time: 'End Time',
@@ -1043,28 +1047,22 @@ function updateKiosk() {
   document.getElementById('kiosk-print').innerHTML =
     renderTagRow('Entrance Print', getTag('KIOSK','kiosk_print_control_entrance'), true, 'KIOSK', 'kiosk_print_control_entrance') +
     renderTagRow('Exit Print', getTag('KIOSK','kiosk_print_control_exit'), true, 'KIOSK', 'kiosk_print_control_exit');
-  const receipt = ['receiptData_1','receiptData_2','receiptData_3','receiptData_4','receiptData_5','receiptData_6'];
-  const receiptRows = receipt.map(t => renderTagRow(TAG_LABELS[t] || t, getTag('KIOSK',t), false, 'KIOSK', t)).join('');
-  const r1 = getTag('KIOSK','receiptData_1');
-  const r2 = getTag('KIOSK','receiptData_2');
-  const r3 = getTag('KIOSK','receiptData_3');
-  const r4 = getTag('KIOSK','receiptData_4');
-  const r5 = getTag('KIOSK','receiptData_5');
-  const r6 = getTag('KIOSK','receiptData_6');
+  const entReceipt = ['receiptData_1_ent','receiptData_2_ent','receiptData_3_ent','receiptData_4_ent','receiptData_5_ent',
+                      'receiptData_6_ent','receiptData_7_ent','receiptData_8_ent','receiptData_9_ent','receiptData_10_ent'];
+  const extReceipt = ['receiptData_1_ext','receiptData_2_ext','receiptData_3_ext','receiptData_4_ext','receiptData_5_ext',
+                      'receiptData_6_ext','receiptData_7_ext','receiptData_8_ext','receiptData_9_ext','receiptData_10_ext'];
+  const esc = s => { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; };
+  const makeReceiptPreview = (tags, side) => {
+    const lines = tags.map(t => getTag('KIOSK',t)).filter(v => v !== '--' && v !== '');
+    return `<div style="background:#ffffff;border-radius:6px;padding:20px 24px;max-width:320px;margin:0 auto;font-family:'Courier New',monospace;color:#000;font-size:13px;line-height:1.6">
+      <div style="text-align:center;font-weight:700;font-size:16px;border-bottom:2px dashed #333;padding-bottom:8px;margin-bottom:8px">PSO ${side}</div>
+      ${lines.map(v => `<div>${esc(v)}</div>`).join('')}
+      <div style="text-align:center;border-top:2px dashed #333;padding-top:8px;margin-top:8px;font-size:11px;color:#666">Thank You</div>
+    </div>`;
+  };
   document.getElementById('kiosk-receipt').innerHTML = `<div class="row">
-    <div class="col-md-6">${receiptRows}</div>
-    <div class="col-md-6">
-      <div style="background:#ffffff;border-radius:6px;padding:20px 24px;max-width:320px;margin:0 auto;font-family:'Courier New',monospace;color:#000;font-size:13px;line-height:1.6">
-        <div style="text-align:center;font-weight:700;font-size:16px;border-bottom:2px dashed #333;padding-bottom:8px;margin-bottom:8px">PSO</div>
-        <div>${r1 !== '--' ? r1 : ''}</div>
-        <div>${r2 !== '--' ? r2 : ''}</div>
-        <div>${r3 !== '--' ? r3 : ''}</div>
-        <div>${r4 !== '--' ? r4 : ''}</div>
-        <div>${r5 !== '--' ? r5 : ''}</div>
-        <div>${r6 !== '--' ? r6 : ''}</div>
-        <div style="text-align:center;border-top:2px dashed #333;padding-top:8px;margin-top:8px;font-size:11px;color:#666">Thank You</div>
-      </div>
-    </div>
+    <div class="col-md-6">${makeReceiptPreview(entReceipt, 'Entrance')}</div>
+    <div class="col-md-6">${makeReceiptPreview(extReceipt, 'Exit')}</div>
   </div>`;
 }
 
@@ -1170,7 +1168,7 @@ function loadWeighments() {
     .then(data => {
       const tbody = document.getElementById('weighments-body');
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#b8c9e0;padding:24px">No records found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#b8c9e0;padding:24px">No records found</td></tr>';
         return;
       }
       tbody.innerHTML = data.map(r => `<tr>
@@ -1178,12 +1176,15 @@ function loadWeighments() {
         <td style="font-family:monospace">${r.rfid_data || '--'}</td>
         <td style="font-family:monospace">${r.card_data || '--'}</td>
         <td style="font-family:monospace">${r.tare_weight ?? '--'}</td>
+        <td style="font-family:monospace">${r.tare_time ?? '--'}</td>
         <td style="font-family:monospace">${r.gross_weight ?? '--'}</td>
+        <td style="font-family:monospace">${r.gross_time ?? '--'}</td>
         <td style="font-family:monospace">${r.net_weight ?? '--'}</td>
+        <td style="font-family:monospace">${r.net_time ?? '--'}</td>
       </tr>`).join('');
     })
     .catch(() => {
-      document.getElementById('weighments-body').innerHTML = '<tr><td colspan="6" style="text-align:center;color:#b8c9e0;padding:24px">Failed to load</td></tr>';
+      document.getElementById('weighments-body').innerHTML = '<tr><td colspan="9" style="text-align:center;color:#b8c9e0;padding:24px">Failed to load</td></tr>';
     });
 }
 

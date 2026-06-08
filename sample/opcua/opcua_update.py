@@ -136,23 +136,65 @@ def update_opc_elements(opc):
                                        "cardData_exit",
                                        opc.read_tag("KIOSK", "cardData_exit", "string"))
     state_manager.state_manager_update("KIOSK",
-                                       "receiptData_1",
-                                       opc.read_tag("KIOSK", "receiptData_1", "string"))
+                                       "receiptData_1_ent",
+                                       opc.read_tag("KIOSK", "receiptData_1_ent", "string"))
     state_manager.state_manager_update("KIOSK",
-                                       "receiptData_2",
-                                       opc.read_tag("KIOSK", "receiptData_2", "string"))
+                                       "receiptData_2_ent",
+                                       opc.read_tag("KIOSK", "receiptData_2_ent", "string"))
     state_manager.state_manager_update("KIOSK",
-                                       "receiptData_3",
-                                       opc.read_tag("KIOSK", "receiptData_3", "string"))
+                                       "receiptData_3_ent",
+                                       opc.read_tag("KIOSK", "receiptData_3_ent", "string"))
     state_manager.state_manager_update("KIOSK",
-                                       "receiptData_4",
-                                       opc.read_tag("KIOSK", "receiptData_4", "string"))
+                                       "receiptData_4_ent",
+                                       opc.read_tag("KIOSK", "receiptData_4_ent", "string"))
     state_manager.state_manager_update("KIOSK",
-                                       "receiptData_5",
-                                       opc.read_tag("KIOSK", "receiptData_5", "string"))
+                                       "receiptData_5_ent",
+                                       opc.read_tag("KIOSK", "receiptData_5_ent", "string"))
     state_manager.state_manager_update("KIOSK",
-                                       "receiptData_6",
-                                       opc.read_tag("KIOSK", "receiptData_6", "string"))
+                                       "receiptData_6_ent",
+                                       opc.read_tag("KIOSK", "receiptData_6_ent", "string"))
+    state_manager.state_manager_update("KIOSK",
+                                       "receiptData_7_ent",
+                                       opc.read_tag("KIOSK", "receiptData_7_ent", "string"))
+    state_manager.state_manager_update("KIOSK",
+                                       "receiptData_8_ent",
+                                       opc.read_tag("KIOSK", "receiptData_8_ent", "string"))
+    state_manager.state_manager_update("KIOSK",
+                                       "receiptData_9_ent",
+                                       opc.read_tag("KIOSK", "receiptData_9_ent", "string"))
+    state_manager.state_manager_update("KIOSK",
+                                       "receiptData_10_ent",
+                                       opc.read_tag("KIOSK", "receiptData_10_ent", "string"))
+    state_manager.state_manager_update("KIOSK",
+                                       "receiptData_1_ext",
+                                       opc.read_tag("KIOSK", "receiptData_1_ent", "string"))
+    state_manager.state_manager_update("KIOSK",
+                                       "receiptData_2_ext",
+                                       opc.read_tag("KIOSK", "receiptData_2_ent", "string"))
+    state_manager.state_manager_update("KIOSK",
+                                       "receiptData_3_ext",
+                                       opc.read_tag("KIOSK", "receiptData_3_ent", "string"))
+    state_manager.state_manager_update("KIOSK",
+                                       "receiptData_4_ext",
+                                       opc.read_tag("KIOSK", "receiptData_4_ent", "string"))
+    state_manager.state_manager_update("KIOSK",
+                                       "receiptData_5_ext",
+                                       opc.read_tag("KIOSK", "receiptData_5_ent", "string"))
+    state_manager.state_manager_update("KIOSK",
+                                       "receiptData_6_ext",
+                                       opc.read_tag("KIOSK", "receiptData_6_ent", "string"))
+    state_manager.state_manager_update("KIOSK",
+                                       "receiptData_7_ext",
+                                       opc.read_tag("KIOSK", "receiptData_7_ent", "string"))
+    state_manager.state_manager_update("KIOSK",
+                                       "receiptData_8_ext",
+                                       opc.read_tag("KIOSK", "receiptData_8_ent", "string"))
+    state_manager.state_manager_update("KIOSK",
+                                       "receiptData_9_ext",
+                                       opc.read_tag("KIOSK", "receiptData_9_ent", "string"))
+    state_manager.state_manager_update("KIOSK",
+                                       "receiptData_10_ext",
+                                       opc.read_tag("KIOSK", "receiptData_10_ent", "string"))
     state_manager.state_manager_update("RFID_Scanner",
                                        "dataRFID_Entrance",
                                        opc.read_tag("RFID_Scanner", "dataRFID_Entrance", "string"))

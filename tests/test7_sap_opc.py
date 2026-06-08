@@ -44,7 +44,7 @@ def main():
         threading.Thread(target=controller.process_automation1_exit, args=(opc,), daemon=True).start()
         
         # ML Inference Thread
-        threading.Thread(target=prediction.ml_inference_worker, args=(opc,engine,), daemon=True).start()
+        # threading.Thread(target=prediction.ml_inference_worker, args=(opc,engine,), daemon=True).start()
         
         while True: # TCP/OPCUA Data-transfer
             opcua_update.update_opc_elements(opc)

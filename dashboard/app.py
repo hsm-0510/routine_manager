@@ -18,7 +18,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 with open(os.path.join(PROJECT_ROOT, "config/system_config.json")) as f:
     SYSTEM_CONFIG = json.load(f)
 
-with open(os.path.join(PROJECT_ROOT, "weighbridgeConfig.json")) as f:
+with open(os.path.join(PROJECT_ROOT, "config/weighbridgeConfig.json")) as f:
     WEIGHBRIDGE_CONFIG = json.load(f)
 
 OPC_CFG = SYSTEM_CONFIG["opc_server"][0]

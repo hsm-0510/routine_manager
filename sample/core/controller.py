@@ -1,4 +1,5 @@
 import time, sqlite3, os
+from datetime import datetime
 from sample.core import scheduler
 from sample.serialInterface import commands
 from sample.serialInterface import parser
@@ -69,10 +70,18 @@ def process_automation1_entrance(opc):
             # Save in SQL Database
             localDB.save_tare(rfidData, cardData, tare_weight)
             print(f"[DATABASE_ENTRY]: Tare Weight: {tare_weight}, RFID Data: {rfidData}, Card Data: {cardData}")
-            
+            id, tare_weight, tare_time, gross_weight, gross_time, net_weight, net_time = localDB.get_weights(rfidData)
             # Generate Entrance Receipt
-            opc.write_tag("KIOSK", "receiptData_1", f"ID. No: {rfidData}")
-            opc.write_tag("KIOSK", "receiptData_2", f"Tare Weight: {tare_weight}")
+            opc.write_tag("KIOSK", "receiptData_1_ent", f"Dated: {datetime.now().date()}")
+            opc.write_tag("KIOSK", "receiptData_2_ent", "Receipt: Entrance KIOSK")
+            opc.write_tag("KIOSK", "receiptData_3_ent", f"Receipt. No: {id}")
+            opc.write_tag("KIOSK", "receiptData_4_ent", f"ID. No: {rfidData}")
+            opc.write_tag("KIOSK", "receiptData_5_ent", f"Tare Weight: {tare_weight}")
+            opc.write_tag("KIOSK", "receiptData_6_ent", f"Capture Time: {tare_time}")
+            opc.write_tag("KIOSK", "receiptData_7_ent", "Gross Weight: Nill")
+            opc.write_tag("KIOSK", "receiptData_8_ent", "Capture Time: Nill")
+            opc.write_tag("KIOSK", "receiptData_9_ent", "Net Weight: Nill")
+            opc.write_tag("KIOSK", "receiptData_10_ent", "Capture Time: Nill")
             time.sleep(1)
             # Print Entrance Receipt
             opc.write_tag("KIOSK", "kiosk_print_control_entrance", "1")
@@ -140,13 +149,13 @@ def process_automation1_exit(opc):
             
             # Net Weight Calculation
             net_weight = int(gross_weight) - int(tare_weight)
+            
             print(f"[EXIT_ROUTINE]: Gross Weight: {gross_weight}, Net Weight: {net_weight}")
             # Generate Exit Receipt
-            opc.write_tag("KIOSK", "receiptData_1", f"ID No.: {rfidData}")
-            opc.write_tag("KIOSK", "receiptData_2", f"Tare Weight: {tare_weight}")
-            opc.write_tag("KIOSK", "receiptData_3", f"Gross Weight: {gross_weight}")
-            opc.write_tag("KIOSK", "receiptData_4", f"Net Weight: {net_weight}")
-            time.sleep(1)
+            # opc.write_tag("KIOSK", "receiptData_1", f"ID No.: {rfidData}")
+            # opc.write_tag("KIOSK", "receiptData_2", f"Tare Weight: {tare_weight}")
+            # opc.write_tag("KIOSK", "receiptData_3", f"Gross Weight: {gross_weight}")
+            # opc.write_tag("KIOSK", "receiptData_4", f"Net Weight: {net_weight}")
             
             # # Update Local Excel
             # localDB.updateData(df, rfidData, cardData, gross_weight, net_weight)
@@ -154,6 +163,21 @@ def process_automation1_exit(opc):
             # Update SQL Database
             localDB.save_gross(rfidData, cardData, tare_weight, gross_weight)
             print(f"[DATABASE_UPDATE]: RFID DATA: {rfidData}, CARD DATA: {cardData}, TARE WEIGHT: {tare_weight}, GROSS WEIGHT: {gross_weight}, NET WEIGHT: {net_weight}")
+            
+            # Get More Data
+            id, tare_weight, tare_time, gross_weight, gross_time, net_weight, net_time = localDB.get_weights(rfidData)
+            # Generate Exit Receipt
+            opc.write_tag("KIOSK", "receiptData_1_ext", f"Dated: {datetime.now().date()}")
+            opc.write_tag("KIOSK", "receiptData_2_ext", "Receipt: Exit KIOSK")
+            opc.write_tag("KIOSK", "receiptData_3_ext", f"Receipt. No: {id}")
+            opc.write_tag("KIOSK", "receiptData_4_ext", f"ID. No: {rfidData}")
+            opc.write_tag("KIOSK", "receiptData_5_ext", f"Tare Weight: {tare_weight}")
+            opc.write_tag("KIOSK", "receiptData_6_ext", f"Capture Time: {tare_time}")
+            opc.write_tag("KIOSK", "receiptData_7_ext", f"Gross Weight: {gross_weight}")
+            opc.write_tag("KIOSK", "receiptData_8_ext", f"Capture Time: {gross_time}")
+            opc.write_tag("KIOSK", "receiptData_9_ext", f"Net Weight: {net_weight}")
+            opc.write_tag("KIOSK", "receiptData_10_ext", f"Capture Time: {net_time}")
+            time.sleep(1)
             
             # Print Exit Receipt
             opc.write_tag("KIOSK", "kiosk_print_control_exit", "1")

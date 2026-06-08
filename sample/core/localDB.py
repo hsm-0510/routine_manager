@@ -1,3 +1,4 @@
+from datetime import datetime
 import pandas as pd
 import time, os, sqlite3
 
@@ -23,8 +24,11 @@ def initialize_database():
         rfid_data TEXT,
         card_data TEXT,
         tare_weight REAL,
+        tare_time TEXT,
         gross_weight REAL NULL,
-        net_weight REAL NULL
+        gross_time TEXT,
+        net_weight REAL NULL,
+        net_time TEXT
     )
                    """)
     conn.commit()
@@ -40,17 +44,23 @@ def save_tare(rfid_data, card_data, tare_weight):
             rfid_data,
             card_data,
             tare_weight,
+            tare_time,
             gross_weight,
-            net_weight
+            gross_time,
+            net_weight,
+            net_time
         )
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             rfid_data,
             card_data,
             tare_weight,
+            datetime.now().strftime("%I:%M %p"),
             0,
-            0
+            'Nill',
+            0,
+            'Nill'
         ))
     conn.commit()
     conn.close()
@@ -82,12 +92,16 @@ def save_gross(rfid_data, card_data, tare_weight, gross_weight):
     cursor.execute("""
         UPDATE weighments
         SET gross_weight=?,
-        net_weight=?
+        gross_time=?,
+        net_weight=?,
+        net_time=?
         WHERE id=?
         """,
         (
             gross_weight,
+            datetime.now().strftime("%I:%M %p"),
             net_weight,
+            datetime.now().strftime("%I:%M %p"),
             weighment_id
         ))
     
@@ -116,9 +130,13 @@ def get_weights(rfid_data):
     cursor = conn.cursor()
     
     cursor.execute("""
-        SELECT tare_weight,
+        SELECT id,
+        tare_weight,
+        tare_time,
         gross_weight,
-        net_weight
+        gross_time,
+        net_weight,
+        net_time
         FROM weighments
         WHERE rfid_data = ?
         ORDER BY id DESC
