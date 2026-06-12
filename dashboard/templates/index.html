@@ -726,11 +726,12 @@ const TAG_LABELS = {
   comPort_exitWB2: 'COM Port', baudrate_exitWB2: 'Baud Rate', timeout_exitWB2: 'Timeout',
   pollingInterval_exitWB2: 'Poll Interval', gross_weight_exitWB2: 'Gross Weight',
   weight_capture_exitControl2: 'Weight Capture',
-  irSens_01_entranceLB: 'IR Sensor 1', irSens_02_entranceLB: 'IR Sensor 2', irSens_03_entranceLB: 'IR Sensor 3',
-  irSens_01_exitLB: 'IR Sensor 1', irSens_02_exitLB: 'IR Sensor 2', irSens_03_exitLB: 'IR Sensor 3',
-  entranceLB_status: 'Barrier Status', exitLB_status: 'Barrier Status',
-  open_entranceLB: 'Open Barrier', close_entranceLB: 'Close Barrier',
-  open_exitLB: 'Open Barrier', close_exitLB: 'Close Barrier',
+  irSens_01_02_entranceLB: 'IR Sensor 1 & 2', irSens_03_entranceLB: 'IR Sensor 3',
+  irSens_01_02_exitLB: 'IR Sensor 1 & 2', irSens_03_exitLB: 'IR Sensor 3',
+  entranceLB_open_status: 'Entrance Barrier Open Status', entranceLB_close_status: 'Entrance Barrier Close Status',
+  exitLB_open_status: 'Exit Barrier Open Status', exitLB_close_status: 'Exit Barrier Close Status',
+  open_entranceLB: 'Open Entrance Barrier Command', close_entranceLB: 'Close Entrance Barrier Command',
+  open_exitLB: 'Open Entrance Barrier Command', close_exitLB: 'Close Entrance Barrier Command',
   channel_5: 'Channel 5', channel_6: 'Channel 6', channel_7: 'Channel 7', channel_8: 'Channel 8',
   driver_absence_status_camera_ent: 'Driver Absence', vehicle_alignment_status_camera_ent: 'Vehicle Alignment',
   driver_absence_status_camera_ext: 'Driver Absence', vehicle_alignment_status_camera_ext: 'Vehicle Alignment',
@@ -922,27 +923,27 @@ function updateOverview() {
   }
 
   // Entrance status overview
-  const ir1e = getTag('Waveshare_Monitoring','irSens_01_entranceLB');
-  const ir2e = getTag('Waveshare_Monitoring','irSens_02_entranceLB');
+  const ir1e = getTag('Waveshare_Monitoring','irSens_01_02_entranceLB');
+  const ir2e = ir1e;
   const ir3e = getTag('Waveshare_Monitoring','irSens_03_entranceLB');
   const dae = getTag('Camera_Detection','driver_absence_status_camera_ent');
   const vae = getTag('Camera_Detection','vehicle_alignment_status_camera_ent');
   const lbOpenE = getTag('Waveshare_Controlling','open_entranceLB');
   const lbCloseE = getTag('Waveshare_Controlling','close_entranceLB');
   document.getElementById('ov-entrance-status').innerHTML = `
-    ${renderTagRow('IR 1', ir1e, false, 'Waveshare_Monitoring', 'irSens_01_entranceLB')}${renderTagRow('IR 2', ir2e, false, 'Waveshare_Monitoring', 'irSens_02_entranceLB')}${renderTagRow('IR 3', ir3e, false, 'Waveshare_Monitoring', 'irSens_03_entranceLB')}
+    ${renderTagRow('IR 1', ir1e, false, 'Waveshare_Monitoring', 'irSens_01_02_entranceLB')}${renderTagRow('IR 2', ir2e, false, 'Waveshare_Monitoring', 'irSens_01_02_entranceLB')}${renderTagRow('IR 3', ir3e, false, 'Waveshare_Monitoring', 'irSens_03_entranceLB')}
     ${renderTagRow('Driver Absence', dae, false, 'Camera_Detection', 'driver_absence_status_camera_ent')}${renderTagRow('Vehicle Alignment', vae, false, 'Camera_Detection', 'vehicle_alignment_status_camera_ent')}
     ${renderTagRow('LB Open', lbOpenE, false, 'Waveshare_Controlling', 'open_entranceLB')}${renderTagRow('LB Close', lbCloseE, false, 'Waveshare_Controlling', 'close_entranceLB')}`;
 
-  const ir1x = getTag('Waveshare_Monitoring','irSens_01_exitLB');
-  const ir2x = getTag('Waveshare_Monitoring','irSens_02_exitLB');
+  const ir1x = getTag('Waveshare_Monitoring','irSens_01_02_exitLB');
+  const ir2x = ir1x;
   const ir3x = getTag('Waveshare_Monitoring','irSens_03_exitLB');
   const dax = getTag('Camera_Detection','driver_absence_status_camera_ext');
   const vax = getTag('Camera_Detection','vehicle_alignment_status_camera_ext');
   const lbOpenX = getTag('Waveshare_Controlling','open_exitLB');
   const lbCloseX = getTag('Waveshare_Controlling','close_exitLB');
   document.getElementById('ov-exit-status').innerHTML = `
-    ${renderTagRow('IR 1', ir1x, false, 'Waveshare_Monitoring', 'irSens_01_exitLB')}${renderTagRow('IR 2', ir2x, false, 'Waveshare_Monitoring', 'irSens_02_exitLB')}${renderTagRow('IR 3', ir3x, false, 'Waveshare_Monitoring', 'irSens_03_exitLB')}
+    ${renderTagRow('IR 1', ir1x, false, 'Waveshare_Monitoring', 'irSens_01_02_exitLB')}${renderTagRow('IR 2', ir2x, false, 'Waveshare_Monitoring', 'irSens_01_02_exitLB')}${renderTagRow('IR 3', ir3x, false, 'Waveshare_Monitoring', 'irSens_03_exitLB')}
     ${renderTagRow('Driver Absence', dax, false, 'Camera_Detection', 'driver_absence_status_camera_ext')}${renderTagRow('Vehicle Alignment', vax, false, 'Camera_Detection', 'vehicle_alignment_status_camera_ext')}
     ${renderTagRow('LB Open', lbOpenX, false, 'Waveshare_Controlling', 'open_exitLB')}${renderTagRow('LB Close', lbCloseX, false, 'Waveshare_Controlling', 'close_exitLB')}`;
 
@@ -995,8 +996,8 @@ function updateExit() {
 }
 
 function updateLaneMonitor() {
-  const entTags = ['irSens_01_entranceLB','irSens_02_entranceLB','irSens_03_entranceLB','entranceLB_status'];
-  const extTags = ['irSens_01_exitLB','irSens_02_exitLB','irSens_03_exitLB','exitLB_status'];
+  const entTags = ['irSens_01_02_entranceLB','irSens_03_entranceLB','entranceLB_open_status', 'entranceLB_close_status'];
+  const extTags = ['irSens_01_02_exitLB','irSens_03_exitLB','exitLB_open_status', 'exitLB_close_status'];
   document.getElementById('lane-mon-ent').innerHTML = entTags.map(t => {
     const val = getTag('Waveshare_Monitoring',t);
     return renderTagRow(TAG_LABELS[t] || t, val, false, 'Waveshare_Monitoring', t);

@@ -34,8 +34,7 @@ def process_automation1_entrance(opc):
     while True:
         # Conditions for Entrance Routine to Initiate
         entrance_conditions = {
-            "ir1_ent": opc.read_tag("Waveshare_Monitoring", "irSens_01_entranceLB", "string"),
-            "ir2_ent": opc.read_tag("Waveshare_Monitoring", "irSens_02_entranceLB", "string"),
+            "ir1_ent": opc.read_tag("Waveshare_Monitoring", "irSens_01_02_entranceLB", "string"),
             "ir3_ent": opc.read_tag("Waveshare_Monitoring", "irSens_03_entranceLB", "string"),
             "driver_absent_entrance": opc.read_tag("Camera_Detection", "driver_absence_status_camera_ent", "string"),
             "vehicle_alignment_entrance": opc.read_tag("Camera_Detection", "vehicle_alignment_status_camera_ent", "string"),
@@ -43,9 +42,8 @@ def process_automation1_entrance(opc):
         }
         # Conditions for Entrance Routine to Close Lane Barrier
         laneB_conditions = {
-            "ir1_ent": opc.read_tag("Waveshare_Monitoring", "irSens_01_entranceLB", "string"),
-            "ir2_ent": opc.read_tag("Waveshare_Monitoring", "irSens_02_entranceLB", "string"),
-            "ir3_ent": opc.read_tag("Waveshare_Monitoring", "irSens_03_entranceLB", "string"),
+            "ir1_ent": opc.read_tag("Waveshare_Monitoring", "irSens_01_02_entranceLB", "string"),
+            "ir3_ent": opc.read_tag("Waveshare_Monitoring", "irSens_03_entranceLB", "string")
         }
         # RDY Status for Entrance Routine Initiation
         entrance_rdy = all(val == "1" for val in entrance_conditions.values())
@@ -110,8 +108,7 @@ def process_automation1_exit(opc):
     while True:
         # Conditions for Exit Routine to Initiate
         exit_conditions = {
-            "ir1_ext": opc.read_tag("Waveshare_Monitoring", "irSens_01_exitLB", "string"),
-            "ir2_ext": opc.read_tag("Waveshare_Monitoring", "irSens_02_exitLB", "string"),
+            "ir1_ext": opc.read_tag("Waveshare_Monitoring", "irSens_01_02_exitLB", "string"),
             "ir3_ext": opc.read_tag("Waveshare_Monitoring", "irSens_03_exitLB", "string"),
             "driver_absent_exit": opc.read_tag("Camera_Detection", "driver_absence_status_camera_ext", "string"),
             "vehicle_alignment_exit": opc.read_tag("Camera_Detection", "vehicle_alignment_status_camera_ext", "string"),
@@ -119,9 +116,8 @@ def process_automation1_exit(opc):
         }
         # Conditions for Entrance Routine to Close Lane Barrier
         laneB_conditions = {
-            "ir1_ext": opc.read_tag("Waveshare_Monitoring", "irSens_01_exitLB", "string"),
-            "ir2_ext": opc.read_tag("Waveshare_Monitoring", "irSens_02_exitLB", "string"),
-            "ir3_ext": opc.read_tag("Waveshare_Monitoring", "irSens_03_exitLB", "string"),
+            "ir1_ext": opc.read_tag("Waveshare_Monitoring", "irSens_01_02_exitLB", "string"),
+            "ir3_ext": opc.read_tag("Waveshare_Monitoring", "irSens_03_exitLB", "string")
         }
         # RDY Status for Exit Routine Initiation
         exit_rdy = all(val == "1" for val in exit_conditions.values())
