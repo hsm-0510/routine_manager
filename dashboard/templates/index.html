@@ -931,7 +931,7 @@ function updateOverview() {
   const lbOpenE = getTag('Waveshare_Controlling','open_entranceLB');
   const lbCloseE = getTag('Waveshare_Controlling','close_entranceLB');
   document.getElementById('ov-entrance-status').innerHTML = `
-    ${renderTagRow('IR 1', ir1e, false, 'Waveshare_Monitoring', 'irSens_01_02_entranceLB')}${renderTagRow('IR 2', ir2e, false, 'Waveshare_Monitoring', 'irSens_01_02_entranceLB')}${renderTagRow('IR 3', ir3e, false, 'Waveshare_Monitoring', 'irSens_03_entranceLB')}
+    ${renderTagRow('IR 1', ir1e, false, 'Waveshare_Monitoring', 'irSens_01_02_entranceLB')}${renderTagRow('IR 3', ir3e, false, 'Waveshare_Monitoring', 'irSens_03_entranceLB')}
     ${renderTagRow('Driver Absence', dae, false, 'Camera_Detection', 'driver_absence_status_camera_ent')}${renderTagRow('Vehicle Alignment', vae, false, 'Camera_Detection', 'vehicle_alignment_status_camera_ent')}
     ${renderTagRow('LB Open', lbOpenE, false, 'Waveshare_Controlling', 'open_entranceLB')}${renderTagRow('LB Close', lbCloseE, false, 'Waveshare_Controlling', 'close_entranceLB')}`;
 
@@ -943,7 +943,7 @@ function updateOverview() {
   const lbOpenX = getTag('Waveshare_Controlling','open_exitLB');
   const lbCloseX = getTag('Waveshare_Controlling','close_exitLB');
   document.getElementById('ov-exit-status').innerHTML = `
-    ${renderTagRow('IR 1', ir1x, false, 'Waveshare_Monitoring', 'irSens_01_02_exitLB')}${renderTagRow('IR 2', ir2x, false, 'Waveshare_Monitoring', 'irSens_01_02_exitLB')}${renderTagRow('IR 3', ir3x, false, 'Waveshare_Monitoring', 'irSens_03_exitLB')}
+    ${renderTagRow('IR 1', ir1x, false, 'Waveshare_Monitoring', 'irSens_01_02_exitLB')}${renderTagRow('IR 3', ir3x, false, 'Waveshare_Monitoring', 'irSens_03_exitLB')}
     ${renderTagRow('Driver Absence', dax, false, 'Camera_Detection', 'driver_absence_status_camera_ext')}${renderTagRow('Vehicle Alignment', vax, false, 'Camera_Detection', 'vehicle_alignment_status_camera_ext')}
     ${renderTagRow('LB Open', lbOpenX, false, 'Waveshare_Controlling', 'open_exitLB')}${renderTagRow('LB Close', lbCloseX, false, 'Waveshare_Controlling', 'close_exitLB')}`;
 
