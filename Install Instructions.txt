@@ -1,9 +1,6 @@
 Download & Install Python 3.13
-Ctrl + Shift + P
-Type-> Python: Create Environment
-Select Venv
-Select Python 3.13
-Select requirements.txt to download dependencies
-Wait for setup to complete
-Restart VSCode
-Run python -m tests.test7_sap_opc in routine_manager directory
+delete the .venv folder if present
+python -m venv .venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+python -m main
