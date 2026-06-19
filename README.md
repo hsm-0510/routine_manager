@@ -688,10 +688,14 @@ pip install -e .
 # Running
 
 ## Start All Components
-
+1. Delete the .venv folder (if present) and continue with running the following commands in the terminal in VSCode
 ```bash
-python main.py
+python -m venv .venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+python -m main
 ```
+2. To run the project as a background process set the routine_manager.bat to run at startup
 
 This launches:
 
