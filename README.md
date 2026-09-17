@@ -1,4 +1,6 @@
 # Routine Manager
+<img width="5557" height="5757" alt="diagram" src="https://github.com/user-attachments/assets/3c97dfa5-47e4-44f2-96d0-83b6b19daa40" />
+
 
 ## Smart Weighbridge Automation Platform
 
