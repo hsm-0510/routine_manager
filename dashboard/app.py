@@ -1,4 +1,5 @@
 import asyncio
+import io
 import json
 import os
 import sqlite3
@@ -6,6 +7,8 @@ import threading
 import time
 from datetime import datetime
 from contextlib import asynccontextmanager
+
+import pandas as pd
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.responses import HTMLResponse
@@ -29,6 +32,13 @@ ws_clients = set()
 tag_lock = threading.Lock()
 event_loop = None
 
+WAVESHARE_TCP_STATUS = {"connected": False, "stale": True, "age": None}
+tcp_status_lock = threading.Lock()
+TCP_STATUS_PATH = os.path.join(PROJECT_ROOT, "dashboard", "tcp_status.json")
+# The routine manager refreshes dashboard/tcp_status.json every
+# TCP_BEACON_INTERVAL seconds; a newer gap means the writer died.
+TCP_BEACON_INTERVAL = 2.0
+TCP_STATUS_STALE_SECONDS = TCP_BEACON_INTERVAL * 4
 
 class OPCClient:
     def __init__(self):
@@ -115,19 +125,99 @@ def opc_poller(opc: OPCClient):
             print(f"[Poller] Error: {e}")
             opc.connected = False
 
-        if changed and event_loop is not None:
-            with tag_lock:
-                snapshot = {k: dict(v) for k, v in tag_values.items()}
-            asyncio.run_coroutine_threadsafe(_broadcast(snapshot), event_loop)
+        if changed:
+            _schedule_broadcast()
 
         time.sleep(0.5)
+
+# def heartbeat_task(opc: OPCClient):
+#     heartbeat = 0
+
+#     while True:
+#         try:
+#             if opc.connected:
+#                 heartbeat += 1
+
+#                 opc.write_tag(
+#                     "System",
+#                     "RoutineHeartbeat",
+#                     heartbeat
+#                 )
+
+#         except Exception as e:
+#             print(f"[Heartbeat] Error: {e}")
+
+#         time.sleep(1)
+
+
+def read_tcp_status():
+    """Read the routine manager's TCP beacon file.
+
+    Returns (connected, stale, age_seconds). A beacon that is missing or
+    older than TCP_STATUS_STALE_SECONDS means the routine manager is not
+    refreshing it, so the link is reported as down no matter what the file
+    says - otherwise a crashed process leaves the GUI stuck on "connected".
+    """
+    try:
+        with open(TCP_STATUS_PATH) as f:
+            st = json.load(f)
+        age = max(0.0, time.time() - float(st.get("timestamp") or 0))
+    except FileNotFoundError:
+        return False, True, None
+    except Exception:
+        return False, True, None
+    stale = age > TCP_STATUS_STALE_SECONDS
+    return (bool(st.get("connected", False)) and not stale), stale, age
+
+
+def get_tcp_status():
+    with tcp_status_lock:
+        return {
+            "connected": WAVESHARE_TCP_STATUS["connected"],
+            "stale": WAVESHARE_TCP_STATUS["stale"],
+            "ageSeconds": WAVESHARE_TCP_STATUS["age"],
+            "source": TCP_STATUS_PATH,
+        }
+
+
+def tcp_status_poller():
+    while True:
+        connected, stale, age = read_tcp_status()
+        with tcp_status_lock:
+            changed = WAVESHARE_TCP_STATUS["connected"] != connected
+            WAVESHARE_TCP_STATUS["connected"] = connected
+            WAVESHARE_TCP_STATUS["stale"] = stale
+            WAVESHARE_TCP_STATUS["age"] = age
+        # Push on transition even if no OPC tag moved, otherwise the header
+        # indicator keeps whatever value the last tag update carried.
+        if changed:
+            _schedule_broadcast()
+        time.sleep(TCP_BEACON_INTERVAL)
+
+
+def _schedule_broadcast():
+    """Thread-safe: push the current snapshot to WebSocket clients."""
+    loop = event_loop
+    if loop is None:
+        return
+    with tag_lock:
+        snapshot = {k: dict(v) for k, v in tag_values.items()}
+    asyncio.run_coroutine_threadsafe(_broadcast(snapshot), loop)
 
 
 async def _broadcast(data):
     dead = set()
+    with tcp_status_lock:
+        tcp_connected = WAVESHARE_TCP_STATUS["connected"]
+        tcp_stale = WAVESHARE_TCP_STATUS["stale"]
     for ws in ws_clients:
         try:
-            await ws.send_json({"type": "update", "data": data})
+            await ws.send_json({
+                "type": "update",
+                "data": data,
+                "waveshareTcp": tcp_connected,
+                "waveshareTcpStale": tcp_stale,
+            })
         except Exception:
             dead.add(ws)
     ws_clients.difference_update(dead)
@@ -158,8 +248,10 @@ async def lifespan(app: FastAPI):
     opc = OPCClient()
     opc.connect()
     app.state.opc = opc
-    t = threading.Thread(target=opc_poller, args=(opc,), daemon=True)
-    t.start()
+    t1 = threading.Thread(target=opc_poller, args=(opc,), daemon=True)
+    t1.start()
+    t2 = threading.Thread(target=tcp_status_poller, daemon=True)
+    t2.start()
     yield
     opc.disconnect()
 
@@ -197,6 +289,49 @@ async def get_weighments_api(limit: int = 50):
     return get_weighments(limit)
 
 
+@app.get("/api/tcp/status")
+async def get_tcp_status_api():
+    return get_tcp_status()
+
+
+@app.get("/api/weighments/download")
+async def download_weighments():
+    """Export weighments. Read-only: retention is handled by the scheduled
+    job in localDB.retention_worker, never as a side effect of a GET."""
+    output = io.BytesIO()
+    df = pd.DataFrame()
+    if os.path.exists(DB_PATH):
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            df = pd.read_sql_query("SELECT * FROM weighments ORDER BY id DESC", conn)
+            conn.close()
+        except Exception as e:
+            print(f"[DB EXPORT ERROR] {e}")
+    # Try openpyxl, fall back to xlsxwriter, fall back to csv
+    ext = ".xlsx"
+    media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    try:
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            df.to_excel(writer, index=False, sheet_name="Weighments")
+    except Exception:
+        try:
+            with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+                df.to_excel(writer, index=False, sheet_name="Weighments")
+        except Exception:
+            output = io.StringIO()
+            df.to_csv(output, index=False)
+            ext = ".csv"
+            media = "text/csv"
+    output.seek(0)
+    from fastapi.responses import StreamingResponse
+    fname = f"weighments_{datetime.now().strftime('%Y%m%d_%H%M%S')}{ext}"
+    return StreamingResponse(
+        iter([output.getvalue().encode() if isinstance(output, io.StringIO) else output.getvalue()]),
+        media_type=media,
+        headers={"Content-Disposition": f"attachment; filename={fname}"}
+    )
+
+
 @app.post("/api/tags/{category}/{tag}")
 async def write_tag(category: str, tag: str, value: str):
     opc = getattr(app.state, "opc", None)
@@ -214,7 +349,15 @@ async def websocket_endpoint(websocket: WebSocket):
     ws_clients.add(websocket)
     with tag_lock:
         snapshot = {k: dict(v) for k, v in tag_values.items()}
-    await websocket.send_json({"type": "init", "data": snapshot})
+    with tcp_status_lock:
+        tcp_connected = WAVESHARE_TCP_STATUS["connected"]
+        tcp_stale = WAVESHARE_TCP_STATUS["stale"]
+    await websocket.send_json({
+        "type": "init",
+        "data": snapshot,
+        "waveshareTcp": tcp_connected,
+        "waveshareTcpStale": tcp_stale,
+    })
     try:
         while True:
             await websocket.receive_text()

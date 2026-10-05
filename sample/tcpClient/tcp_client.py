@@ -8,6 +8,9 @@ SERVER_PORT = config_loader.waveshare_config_load("serverPort", 0)
 last_message = ""
 message = " "
 
+
+last_heartbeat_time = time.time()
+last_heartbeat_value = 0
 # Establish TCP Socket
 def connect_tcp_socket(sock, serverIP, serverPort):
     try:
@@ -35,9 +38,15 @@ def get_payload_value(payload, key):
 # Send Function
 def send_data(conn_mgr, payload):
     last_message = None
+    last_epoch = -1
     while not conn_mgr.stop_event.is_set():
         if not conn_mgr.connected.wait(timeout=1):
             continue
+
+        if conn_mgr.connect_epoch != last_epoch:
+            last_epoch = conn_mgr.connect_epoch
+            last_message = None
+
         sock = conn_mgr.get_socket()
         if sock is None:
             continue
@@ -53,16 +62,22 @@ def send_data(conn_mgr, payload):
             time.sleep(1)
         except Exception as e:
             print(f"[SEND ERROR] {e}")
-            # break
         time.sleep(1)      
              
 # Receive Function
-def receive_data(conn_mgr):     
+def receive_data(conn_mgr):
+    global last_heartbeat_time
+    global last_heartbeat_value     
     buffer = ""
+    last_epoch = -1
     
     while not conn_mgr.stop_event.is_set():
         if not conn_mgr.connected.wait(timeout=1):
             continue
+
+        if conn_mgr.connect_epoch != last_epoch:
+            last_epoch = conn_mgr.connect_epoch
+            buffer = ""
 
         sock = conn_mgr.get_socket()
         if sock is None:
@@ -83,11 +98,16 @@ def receive_data(conn_mgr):
                     continue
                 try:
                     parsed = json.loads(line)
+                    if "heartbeat" in parsed:
+                        last_heartbeat_time = time.time()
+                        last_heartbeat_value = parsed["heartbeat"]
+                        conn_mgr.update_heartbeat()
+                        print(f"[HEARTBEAT] {last_heartbeat_value}")
                     print(f"[RECEIVED] {json.dumps(parsed, indent=2)}")
                     
                     # UPDATE PAYLOAD HERE
                     for section in parsed:  # "inputs"
-                        if section in state_manager.tcp_payload:
+                        if section in state_manager.tcp_payload and isinstance(parsed[section],dict):
                             for key, value in parsed[section].items():
                                 updated = update_payload(state_manager.tcp_payload, key, value)
                                 if updated:

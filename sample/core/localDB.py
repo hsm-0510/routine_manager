@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 import time, os, sqlite3
 
@@ -28,9 +28,15 @@ def initialize_database():
         gross_weight REAL NULL,
         gross_time TEXT,
         net_weight REAL NULL,
-        net_time TEXT
+        net_time TEXT,
+        created_at TEXT
     )
                    """)
+    # Add created_at column if missing (migration for existing DBs)
+    try:
+        cursor.execute("ALTER TABLE weighments ADD COLUMN created_at TEXT")
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
     conn.close()
 
@@ -38,6 +44,7 @@ def initialize_database():
 def save_tare(rfid_data, card_data, tare_weight):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    now = datetime.now()
     cursor.execute("""
         INSERT INTO weighments
         (
@@ -48,19 +55,21 @@ def save_tare(rfid_data, card_data, tare_weight):
             gross_weight,
             gross_time,
             net_weight,
-            net_time
+            net_time,
+            created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             rfid_data,
             card_data,
             tare_weight,
-            datetime.now().strftime("%I:%M %p"),
+            now.strftime("%I:%M %p"),
             0,
             'Nill',
             0,
-            'Nill'
+            'Nill',
+            now.strftime("%Y-%m-%d %H:%M:%S")
         ))
     conn.commit()
     conn.close()
@@ -146,6 +155,40 @@ def get_weights(rfid_data):
     conn.close()
     return row
     
+# Delete records older than N days
+def delete_old_records(days=1):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute("DELETE FROM weighments WHERE created_at IS NOT NULL AND created_at < ?", (cutoff,))
+        deleted = cursor.rowcount
+        conn.commit()
+        conn.close()
+        if deleted > 0:
+            print(f"[DB CLEANUP] Deleted {deleted} record(s) older than {days} day(s)")
+        return deleted
+    except Exception as e:
+        print(f"[DB CLEANUP ERROR] {e}")
+        return 0
+
+# Retention policy: how long a weighment is kept, and how often the sweep runs
+RETENTION_DAYS = 1
+RETENTION_INTERVAL_S = 3600
+
+# Periodic retention sweep. Started once from the routine manager so records
+# expire on their own instead of only when someone downloads a spreadsheet.
+def retention_worker(stop_event=None):
+    print(f"[DB RETENTION] Sweep every {RETENTION_INTERVAL_S}s, keeping {RETENTION_DAYS} day(s)")
+    delete_old_records(RETENTION_DAYS)
+    while True:
+        if stop_event is not None:
+            if stop_event.wait(RETENTION_INTERVAL_S):
+                return
+        else:
+            time.sleep(RETENTION_INTERVAL_S)
+        delete_old_records(RETENTION_DAYS)
+
 ##################################### EXCEL BASED ################################################
 
 # Create Database Column Titles

@@ -1,5 +1,28 @@
-import os, json, threading
+import os, json, threading, time
 from sample.utils import config_loader
+
+TCP_STATUS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "dashboard", "tcp_status.json")
+# The dashboard treats the beacon as dead after 4x this interval, so it must be
+# refreshed continuously - not only on connect/disconnect - otherwise a quiet
+# but healthy link looks stale.
+TCP_BEACON_INTERVAL = 2.0
+
+def write_tcp_status(connected: bool):
+    """Publish the Waveshare TCP link state for the dashboard.
+
+    Written atomically (temp file + os.replace) so a reader never sees a
+    half-written document and silently keeps a stale value.
+    """
+    try:
+        os.makedirs(os.path.dirname(TCP_STATUS_FILE), exist_ok=True)
+        tmp = TCP_STATUS_FILE + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump({"connected": bool(connected), "timestamp": time.time()}, f)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, TCP_STATUS_FILE)
+    except Exception:
+        pass
 
 # System Tags
 misc_tags = {

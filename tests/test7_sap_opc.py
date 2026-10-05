@@ -46,6 +46,9 @@ def main():
         # ML Inference Thread
         # threading.Thread(target=prediction.ml_inference_worker, args=(opc,engine,), daemon=True).start()
         
+        # Weighment retention sweep (expires old rows on a schedule)
+        threading.Thread(target=localDB.retention_worker, args=(conn_mgr.stop_event,), daemon=True).start()
+        
         while True: # TCP/OPCUA Data-transfer
             opcua_update.update_opc_elements(opc)
             time.sleep(1)
@@ -69,6 +72,7 @@ if __name__ == "__main__":
     
     # Establishing TCP Connection Manager
     conn_mgr = tcp_connection_manager.TCPConnectionManager(tcp_client.SERVER_IP, tcp_client.SERVER_PORT)
+    conn_mgr.payload_ref = state_manager.tcp_payload
     
     #Run Main()
     main()

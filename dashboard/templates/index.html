@@ -264,6 +264,11 @@ body {
   .sidebar-toggle { display: block !important; }
 }
 .sidebar-toggle { display: none; background: none; border: none; color: var(--text-primary); font-size: 20px; cursor: pointer; }
+.btn-print { background: var(--accent-green); border: none; color: #fff; padding: 8px 20px; border-radius: 6px; font-size: 14px; cursor: pointer; transition: opacity .15s; }
+.btn-print:hover { opacity: .8; }
+.btn-ok { background: var(--accent-blue); border: none; color: #fff; padding: 8px 20px; border-radius: 6px; font-size: 14px; cursor: pointer; transition: opacity .15s; }
+.btn-ok:hover { opacity: .8; }
+
 </style>
 </head>
 <body>
@@ -292,6 +297,8 @@ body {
     <div class="nav-item" data-page="camera"><i class="bi bi-camera"></i> Camera Detection</div>
     <div class="nav-item" data-page="rfid"><i class="bi bi-upc-scan"></i> RFID Scanner</div>
     <div class="nav-item" data-page="kiosk"><i class="bi bi-printer"></i> KIOSK</div>
+    <div class="nav-item" data-page="entrance-receipt"><i class="bi bi-receipt"></i> Entrance Receipt</div>
+    <div class="nav-item" data-page="exit-receipt"><i class="bi bi-receipt"></i> Exit Receipt</div>
   </div>
   <div class="sidebar-section">
     <div class="sidebar-label">Data & Alerts</div>
@@ -313,6 +320,7 @@ body {
     <div class="header-status">
       <span><span class="status-dot online" id="opcStatusDot"></span> <span id="opcStatusText">OPC UA</span></span>
       <span><span class="status-dot online" id="wsStatusDot"></span> <span id="wsStatusText">WebSocket</span></span>
+      <span><span class="status-dot offline" id="wsTcpDot"></span> <span id="wsTcpText">Waveshare TCP: Connecting...</span></span>
       <span id="clockDisplay" style="color:#ffffff">--:--:--</span>
     </div>
   </div>
@@ -605,9 +613,45 @@ body {
           </div>
         </div>
       </div>
-      <div class="card">
-        <div class="card-header"><i class="bi bi-receipt"></i> Receipt Data</div>
-        <div class="card-body" id="kiosk-receipt"></div>
+    </div>
+
+    <!-- ENTRANCE RECEIPT -->
+    <div class="page-section" id="page-entrance-receipt">
+      <div class="section-header">
+        <h2>Entrance Receipt</h2>
+        <p>KIOSK receipt data for entrance weighment</p>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-receipt"></i> Receipt Preview</div>
+            <div class="card-body" id="entrance-receipt-content"></div>
+          </div>
+        </div>
+      </div>
+      <div class="d-flex gap-2 mt-2">
+        <button class="btn btn-success" onclick="printReceipt('entrance')"><i class="bi bi-printer"></i> Print</button>
+        <button class="btn btn-secondary" onclick="navigateTo('overview')"><i class="bi bi-check-lg"></i> OK</button>
+      </div>
+    </div>
+
+    <!-- EXIT RECEIPT -->
+    <div class="page-section" id="page-exit-receipt">
+      <div class="section-header">
+        <h2>Exit Receipt</h2>
+        <p>KIOSK receipt data for exit weighment</p>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-receipt"></i> Receipt Preview</div>
+            <div class="card-body" id="exit-receipt-content"></div>
+          </div>
+        </div>
+      </div>
+      <div class="d-flex gap-2 mt-2">
+        <button class="btn btn-success" onclick="printReceipt('exit')"><i class="bi bi-printer"></i> Print</button>
+        <button class="btn btn-secondary" onclick="navigateTo('overview')"><i class="bi bi-check-lg"></i> OK</button>
       </div>
     </div>
 
@@ -681,7 +725,10 @@ body {
       <div class="card">
         <div class="card-header">
           <span><i class="bi bi-table"></i> Records</span>
-          <button class="btn-write" onclick="loadWeighments()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+          <div>
+            <button class="btn-write" onclick="downloadWeighments()"><i class="bi bi-download"></i> Download XLS</button>
+            <button class="btn-write" onclick="loadWeighments()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+          </div>
         </div>
         <div class="card-body p-0">
           <div style="overflow-x:auto">
@@ -794,6 +841,9 @@ function initWebSocket() {
         updateAll();
         updateOPCStatus();
       }
+      if (msg.waveshareTcp !== undefined) {
+        updateWaveshareTcpStatus(msg.waveshareTcp, msg.waveshareTcpStale);
+      }
     } catch(err) {}
   };
 }
@@ -802,6 +852,29 @@ function updateOPCStatus() {
   const hasData = Object.keys(tagData).length > 0;
   document.getElementById('opcStatusDot').className = hasData ? 'status-dot online' : 'status-dot offline';
   document.getElementById('opcStatusText').textContent = hasData ? 'OPC UA: Connected' : 'OPC UA: No Data';
+}
+
+function updateWaveshareTcpStatus(connected, stale) {
+  const dot = document.getElementById('wsTcpDot');
+  const text = document.getElementById('wsTcpText');
+  if (stale) {
+    dot.className = 'status-dot offline';
+    text.textContent = 'Waveshare TCP: No Signal';
+  } else if (connected) {
+    dot.className = 'status-dot online';
+    text.textContent = 'Waveshare TCP: Connected';
+  } else {
+    dot.className = 'status-dot offline';
+    text.textContent = 'Waveshare TCP: Disconnected';
+  }
+}
+
+async function refreshTcpStatus() {
+  try {
+    const resp = await fetch('/api/tcp/status');
+    const data = await resp.json();
+    updateWaveshareTcpStatus(data.connected, data.stale);
+  } catch(e) {}
 }
 
 function getTag(category, tag) {
@@ -893,6 +966,8 @@ function updateAll() {
   updateKiosk();
   updateSAP();
   updateML();
+  updateEntranceReceipt();
+  updateExitReceipt();
   updateWeightChart();
 }
 
@@ -1048,23 +1123,6 @@ function updateKiosk() {
   document.getElementById('kiosk-print').innerHTML =
     renderTagRow('Entrance Print', getTag('KIOSK','kiosk_print_control_entrance'), true, 'KIOSK', 'kiosk_print_control_entrance') +
     renderTagRow('Exit Print', getTag('KIOSK','kiosk_print_control_exit'), true, 'KIOSK', 'kiosk_print_control_exit');
-  const entReceipt = ['receiptData_1_ent','receiptData_2_ent','receiptData_3_ent','receiptData_4_ent','receiptData_5_ent',
-                      'receiptData_6_ent','receiptData_7_ent','receiptData_8_ent','receiptData_9_ent','receiptData_10_ent'];
-  const extReceipt = ['receiptData_1_ext','receiptData_2_ext','receiptData_3_ext','receiptData_4_ext','receiptData_5_ext',
-                      'receiptData_6_ext','receiptData_7_ext','receiptData_8_ext','receiptData_9_ext','receiptData_10_ext'];
-  const esc = s => { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; };
-  const makeReceiptPreview = (tags, side) => {
-    const lines = tags.map(t => getTag('KIOSK',t)).filter(v => v !== '--' && v !== '');
-    return `<div style="background:#ffffff;border-radius:6px;padding:20px 24px;max-width:320px;margin:0 auto;font-family:'Courier New',monospace;color:#000;font-size:13px;line-height:1.6">
-      <div style="text-align:center;font-weight:700;font-size:16px;border-bottom:2px dashed #333;padding-bottom:8px;margin-bottom:8px">PSO ${side}</div>
-      ${lines.map(v => `<div>${esc(v)}</div>`).join('')}
-      <div style="text-align:center;border-top:2px dashed #333;padding-top:8px;margin-top:8px;font-size:11px;color:#666">Thank You</div>
-    </div>`;
-  };
-  document.getElementById('kiosk-receipt').innerHTML = `<div class="row">
-    <div class="col-md-6">${makeReceiptPreview(entReceipt, 'Entrance')}</div>
-    <div class="col-md-6">${makeReceiptPreview(extReceipt, 'Exit')}</div>
-  </div>`;
 }
 
 function updateSAP() {
@@ -1124,6 +1182,57 @@ function updateML() {
   }).join('');
 }
 
+function updateEntranceReceipt() {
+  const tags = ['receiptData_1_ent','receiptData_2_ent','receiptData_3_ent','receiptData_4_ent','receiptData_5_ent',
+                'receiptData_6_ent','receiptData_7_ent','receiptData_8_ent','receiptData_9_ent','receiptData_10_ent'];
+  const lines = tags.map(t => getTag('KIOSK',t)).filter(v => v !== '--' && v !== '');
+  const esc = s => { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; };
+  document.getElementById('entrance-receipt-content').innerHTML =
+    `<div id="entrance-receipt-printable" style="background:#ffffff;border-radius:8px;padding:24px 28px;max-width:380px;margin:0 auto;font-family:'Courier New',monospace;color:#000;font-size:14px;line-height:1.8">
+      <div style="text-align:center;font-weight:700;font-size:18px;border-bottom:2px dashed #333;padding-bottom:10px;margin-bottom:10px">PSO Entrance</div>
+      ${lines.map(v => `<div>${esc(v)}</div>`).join('')}
+      <div style="text-align:center;border-top:2px dashed #333;padding-top:10px;margin-top:10px;font-size:12px;color:#666">Thank You</div>
+    </div>`;
+}
+
+function updateExitReceipt() {
+  const tags = ['receiptData_1_ext','receiptData_2_ext','receiptData_3_ext','receiptData_4_ext','receiptData_5_ext',
+                'receiptData_6_ext','receiptData_7_ext','receiptData_8_ext','receiptData_9_ext','receiptData_10_ext'];
+  const lines = tags.map(t => getTag('KIOSK',t)).filter(v => v !== '--' && v !== '');
+  const esc = s => { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; };
+  document.getElementById('exit-receipt-content').innerHTML =
+    `<div id="exit-receipt-printable" style="background:#ffffff;border-radius:8px;padding:24px 28px;max-width:380px;margin:0 auto;font-family:'Courier New',monospace;color:#000;font-size:14px;line-height:1.8">
+      <div style="text-align:center;font-weight:700;font-size:18px;border-bottom:2px dashed #333;padding-bottom:10px;margin-bottom:10px">PSO Exit</div>
+      ${lines.map(v => `<div>${esc(v)}</div>`).join('')}
+      <div style="text-align:center;border-top:2px dashed #333;padding-top:10px;margin-top:10px;font-size:12px;color:#666">Thank You</div>
+    </div>`;
+}
+
+function printReceipt(side) {
+  const id = side === 'entrance' ? 'entrance-receipt-printable' : 'exit-receipt-printable';
+  const el = document.getElementById(id);
+  if (!el) return;
+  const win = window.open('', '', 'width=400,height=600');
+  win.document.write(`<html><head><title>Print Receipt</title><style>
+    body { margin:0; padding:20px; font-family:'Courier New',monospace; font-size:14px; line-height:1.8; color:#000; }
+  </style></head><body>${el.outerHTML}</body></html>`);
+  win.document.close();
+  win.focus();
+  win.print();
+  win.close();
+}
+
+function navigateTo(page) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navItem = document.querySelector(`.nav-item[data-page="${page}"]`);
+  if (navItem) navItem.classList.add('active');
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById('page-' + page);
+  if (target) target.classList.add('active');
+  document.getElementById('pageTitle').textContent = navItem ? navItem.textContent.trim() : page;
+  if (page === 'weighments') loadWeighments();
+}
+
 function updateWeightChart() {
   const ew = parseFloat(getTag('Entrance_XK3190_DS8','gross_weight_entranceWB1'));
   const xw = parseFloat(getTag('Exit_XK3190_DS8','gross_weight_exitWB2'));
@@ -1161,6 +1270,31 @@ function updateWeightChart() {
     weightChart.data.datasets[1].data = weightHistory.map(d => d.exit);
     weightChart.update('none');
   }
+}
+
+function downloadWeighments() {
+  const btn = document.querySelector('.btn-write i.bi-download');
+  if (btn) btn.className = 'bi bi-hourglass-split';
+  fetch('/api/weighments/download')
+    .then(r => {
+      if (!r.ok) throw new Error('Server error');
+      return r.blob();
+    })
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'weighments.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if (btn) btn.className = 'bi bi-download';
+    })
+    .catch(e => {
+      showToast('Download failed: ' + e.message, 'danger');
+      if (btn) btn.className = 'bi bi-download';
+    });
 }
 
 function loadWeighments() {
@@ -1224,6 +1358,7 @@ fetch('/api/config').then(r => r.json()).then(config => {
 setInterval(updateClock, 1000);
 updateClock();
 initWebSocket();
+refreshTcpStatus();
 
 // Fallback polling if WebSocket fails
 setInterval(async () => {
@@ -1237,6 +1372,9 @@ setInterval(async () => {
     }
   } catch(e) {}
 }, 5000);
+
+// Keep the TCP indicator live even if the WebSocket is down
+setInterval(refreshTcpStatus, 5000);
 </script>
 </body>
 </html>

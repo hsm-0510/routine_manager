@@ -123,8 +123,16 @@
                 {"name": "SAP_PROB_DRIFT", "type": "string"},
                 {"name": "SAP_PROB_MISSING", "type": "string"}
             ]
-        }
+        },
+        {
+            "name": "Syncing Check",
+            "tags":[
+                {"name" : "WaveShare_Heartbeat", "type": "int"},
+                {"name" : "RoutineManager_Heartbeat", "type": "int"}
+             ]
 
+            
+        }
     ]
 }
 

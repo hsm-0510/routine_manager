@@ -1,1 +1,7 @@
 /.venv
+__pycache__/
+*.pyc
+
+# Runtime beacon written by the TCP connection manager, read by the dashboard
+/dashboard/tcp_status.json
+/dashboard/tcp_status.json.tmp

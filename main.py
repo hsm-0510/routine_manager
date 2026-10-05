@@ -3,6 +3,7 @@ import sys
 import os
 import time
 import threading
+from sample.tcpClient import tcp_client
 
 #BASE = os.path.dirname(os.path.abspath(__file__))
 if getattr(sys, "frozen", False):
@@ -77,12 +78,14 @@ dashboard = subprocess.Popen(
 procs.append(dashboard)
 
 def pipe_reader(stream, prefix):
+    if stream is None or not hasattr(stream, "readline"):
+        print(f"[ERROR] {prefix}: Invalid stream(None), skipping thread")
+        return
     for line in iter(stream.readline, ""):
         print(f"[{prefix}] {line}", end="", flush=True)
 
 threading.Thread(target=pipe_reader, args=(main_proj.stdout, "MAIN"), daemon=True).start()
 threading.Thread(target=pipe_reader, args=(dashboard.stdout, "DASH"), daemon=True).start()
-
 time.sleep(3)
 
 if main_proj.poll() is not None:
