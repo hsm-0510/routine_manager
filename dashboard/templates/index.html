@@ -269,9 +269,34 @@ body {
 .btn-ok { background: var(--accent-blue); border: none; color: #fff; padding: 8px 20px; border-radius: 6px; font-size: 14px; cursor: pointer; transition: opacity .15s; }
 .btn-ok:hover { opacity: .8; }
 
+/* --- remote access login --- */
+.login-overlay { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; background: rgba(5,12,24,.95); }
+.login-overlay.show { display: flex; }
+.login-card { width: 100%; max-width: 380px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 28px; box-shadow: 0 18px 50px rgba(0,0,0,.5); }
+.login-card h5 { margin: 0 0 4px; }
+.login-card .sub { color: var(--text-secondary); font-size: 13px; margin: 0 0 18px; }
+.login-card input { width: 100%; background: rgba(255,255,255,.08); border: 1px solid var(--border-color); border-radius: 6px; color: #fff; padding: 10px 12px; font-family: monospace; font-size: 14px; }
+.login-card input:focus { outline: none; border-color: var(--accent-blue); }
+.login-card button { width: 100%; margin-top: 14px; background: var(--accent-blue); color: #fff; border: 0; border-radius: 6px; padding: 10px; font-weight: 600; cursor: pointer; }
+.login-card button:disabled { opacity: .6; cursor: default; }
+.login-error { color: var(--accent-red); font-size: 13px; margin-top: 12px; min-height: 18px; }
+.btn-logout { background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+.btn-logout:hover { border-color: var(--accent-red); color: var(--accent-red); }
 </style>
 </head>
 <body>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <h5><i class="bi bi-shield-lock"></i> Weighbridge Dashboard</h5>
+    <p class="sub">Enter the dashboard access token to continue.</p>
+    <form id="loginForm" autocomplete="off">
+      <input type="password" id="loginToken" placeholder="Access token" autocomplete="current-password">
+      <button type="submit" id="loginButton">Sign in</button>
+    </form>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
 
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
@@ -321,6 +346,7 @@ body {
       <span><span class="status-dot online" id="opcStatusDot"></span> <span id="opcStatusText">OPC UA</span></span>
       <span><span class="status-dot online" id="wsStatusDot"></span> <span id="wsStatusText">WebSocket</span></span>
       <span><span class="status-dot offline" id="wsTcpDot"></span> <span id="wsTcpText">Waveshare TCP: Connecting...</span></span>
+      <button class="btn-logout" id="logoutButton" style="display:none"><i class="bi bi-box-arrow-right"></i> Sign out</button>
       <span id="clockDisplay" style="color:#ffffff">--:--:--</span>
     </div>
   </div>
@@ -813,6 +839,121 @@ const WRITABLE_TAGS = {
 const ON_VALUES = ['1','true','yes','on','active'];
 const OFF_VALUES = ['0','false','no','off','inactive'];
 
+// ---------- remote access authentication ----------
+// Only needed when the dashboard is reached from outside localhost. Everything
+// stays same-origin (relative URLs + location.host), so the Cloudflare Tunnel
+// hostname needs no configuration here.
+const AUTH_STATE = { required: false, authenticated: true, ready: false };
+let authWsBlocked = false;
+
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(^|;\\s*)' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
+// Single entry point for API calls: attaches the CSRF token to writes and
+// turns a 401 into the login prompt instead of a silent console error.
+async function apiFetch(path, options = {}) {
+  const opts = { credentials: 'same-origin', ...options };
+  const method = (opts.method || 'GET').toUpperCase();
+  if (method !== 'GET' && method !== 'HEAD') {
+    const csrf = getCookie('wb_csrf');
+    if (csrf) opts.headers = Object.assign({ 'X-CSRF-Token': csrf }, opts.headers || {});
+  }
+  const resp = await fetch(path, opts);
+  if (resp.status === 401) {
+    AUTH_STATE.authenticated = false;
+    showLogin('Session expired. Please sign in again.');
+    throw new Error('unauthorized');
+  }
+  return resp;
+}
+
+function showLogin(message) {
+  document.getElementById('loginOverlay').classList.add('show');
+  document.getElementById('logoutButton').style.display = 'none';
+  const err = document.getElementById('loginError');
+  err.textContent = message || '';
+  const field = document.getElementById('loginToken');
+  if (field) field.focus();
+}
+
+function hideLogin() {
+  document.getElementById('loginOverlay').classList.remove('show');
+  document.getElementById('loginError').textContent = '';
+}
+
+async function doLogin(event) {
+  event.preventDefault();
+  const button = document.getElementById('loginButton');
+  const err = document.getElementById('loginError');
+  button.disabled = true;
+  err.textContent = '';
+  try {
+    const resp = await fetch('/api/auth/login', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: document.getElementById('loginToken').value })
+    });
+    if (!resp.ok) {
+      let detail = '';
+      try { detail = (await resp.json()).detail || ''; } catch (e) {}
+      err.textContent = resp.status === 429
+        ? (detail || 'Too many attempts. Wait a minute and try again.')
+        : 'Invalid access token.';
+      return;
+    }
+    document.getElementById('loginToken').value = '';
+    AUTH_STATE.authenticated = true;
+    authWsBlocked = false;
+    hideLogin();
+    document.getElementById('logoutButton').style.display = AUTH_STATE.required ? '' : 'none';
+    initWebSocket();
+    loadConfig();
+    pullTags();
+    refreshTcpStatus();
+  } catch (e) {
+    err.textContent = 'Cannot reach the dashboard. Check the connection.';
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function doLogout() {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+  } catch (e) {}
+  AUTH_STATE.authenticated = false;
+  authWsBlocked = true;
+  if (ws) { ws.onclose = null; try { ws.close(); } catch (e) {} ws = null; }
+  showLogin('Signed out.');
+}
+
+async function loadConfig() {
+  try {
+    const resp = await apiFetch('/api/config');
+    const config = await resp.json();
+    WEIGHBRIDGE_TAGS = {};
+    (config.categories || []).forEach(cat => { WEIGHBRIDGE_TAGS[cat.name] = cat.tags; });
+  } catch (e) {}
+}
+
+async function pullTags() {
+  try {
+    const resp = await apiFetch('/api/tags');
+    const data = await resp.json();
+    if (data && Object.keys(data).length > 0) {
+      tagData = data;
+      updateAll();
+      updateOPCStatus();
+    }
+  } catch (e) {}
+}
+
+// Tag lists, loaded from /api/config once authenticated
+let WEIGHBRIDGE_TAGS = {};
+
 let tagData = {};
 let weightHistory = [];
 let weightChart = null;
@@ -820,6 +961,8 @@ let ws = null;
 let wsReconnectTimer = null;
 
 function initWebSocket() {
+  // Do not hammer the handshake while a login is pending or a logout was asked for.
+  if (authWsBlocked || (AUTH_STATE.required && !AUTH_STATE.authenticated)) return;
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(`${proto}//${location.host}/ws`);
   ws.onopen = () => {
@@ -827,9 +970,17 @@ function initWebSocket() {
     document.getElementById('wsStatusText').textContent = 'WebSocket: Connected';
     if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
   };
-  ws.onclose = () => {
+  ws.onclose = (event) => {
     document.getElementById('wsStatusDot').className = 'status-dot offline';
     document.getElementById('wsStatusText').textContent = 'WebSocket: Disconnected';
+    // 1008 = the server refused the handshake because the session is gone.
+    // Reconnecting would just loop, so ask for the token instead.
+    if (event.code === 1008 && AUTH_STATE.required) {
+      authWsBlocked = true;
+      AUTH_STATE.authenticated = false;
+      showLogin('Session expired. Please sign in again.');
+      return;
+    }
     wsReconnectTimer = setTimeout(initWebSocket, 3000);
   };
   ws.onerror = () => ws && ws.close();
@@ -871,7 +1022,7 @@ function updateWaveshareTcpStatus(connected, stale) {
 
 async function refreshTcpStatus() {
   try {
-    const resp = await fetch('/api/tcp/status');
+    const resp = await apiFetch('/api/tcp/status');
     const data = await resp.json();
     updateWaveshareTcpStatus(data.connected, data.stale);
   } catch(e) {}
@@ -932,7 +1083,7 @@ function renderTagInput(label, value, category, tag) {
 
 async function writeTag(category, tag, value) {
   try {
-    const resp = await fetch(`/api/tags/${category}/${tag}?value=${encodeURIComponent(value)}`, { method: 'POST' });
+    const resp = await apiFetch(`/api/tags/${category}/${tag}?value=${encodeURIComponent(value)}`, { method: 'POST' });
     const data = await resp.json();
     if (resp.ok) {
       showToast(`Written: ${category}.${tag} = ${value}`, 'success');
@@ -1275,7 +1426,7 @@ function updateWeightChart() {
 function downloadWeighments() {
   const btn = document.querySelector('.btn-write i.bi-download');
   if (btn) btn.className = 'bi bi-hourglass-split';
-  fetch('/api/weighments/download')
+  apiFetch('/api/weighments/download')
     .then(r => {
       if (!r.ok) throw new Error('Server error');
       return r.blob();
@@ -1298,7 +1449,7 @@ function downloadWeighments() {
 }
 
 function loadWeighments() {
-  fetch('/api/weighments?limit=50')
+  apiFetch('/api/weighments?limit=50')
     .then(r => r.json())
     .then(data => {
       const tbody = document.getElementById('weighments-body');
@@ -1346,35 +1497,43 @@ function updateClock() {
   document.getElementById('clockDisplay').textContent = new Date().toLocaleTimeString();
 }
 
-// Load weighbridge config to build tag lists
-let WEIGHBRIDGE_TAGS = {};
-fetch('/api/config').then(r => r.json()).then(config => {
-  (config.categories || []).forEach(cat => {
-    WEIGHBRIDGE_TAGS[cat.name] = cat.tags;
-  });
-}).catch(() => {});
-
 // Init
 setInterval(updateClock, 1000);
 updateClock();
-initWebSocket();
-refreshTcpStatus();
 
 // Fallback polling if WebSocket fails
-setInterval(async () => {
-  try {
-    const resp = await fetch('/api/tags');
-    const data = await resp.json();
-    if (data && Object.keys(data).length > 0) {
-      tagData = data;
-      updateAll();
-      updateOPCStatus();
-    }
-  } catch(e) {}
-}, 5000);
-
-// Keep the TCP indicator live even if the WebSocket is down
+setInterval(pullTags, 5000);
 setInterval(refreshTcpStatus, 5000);
+
+document.getElementById('loginForm').addEventListener('submit', doLogin);
+document.getElementById('logoutButton').addEventListener('click', doLogout);
+
+// Ask the server whether a token is needed before touching any protected
+// endpoint, so a remote operator sees the login form instead of a wall of 401s.
+async function bootstrap() {
+  try {
+    const resp = await fetch('/api/auth/status', { credentials: 'same-origin' });
+    const status = await resp.json();
+    AUTH_STATE.required = !!status.authRequired;
+    AUTH_STATE.authenticated = !!status.authenticated;
+  } catch (e) {
+    // Fail safe: if we cannot even reach the status endpoint, show the form.
+    AUTH_STATE.required = true;
+    AUTH_STATE.authenticated = false;
+  }
+  AUTH_STATE.ready = true;
+  if (AUTH_STATE.required && !AUTH_STATE.authenticated) {
+    showLogin();
+    return;
+  }
+  document.getElementById('logoutButton').style.display = AUTH_STATE.required ? '' : 'none';
+  initWebSocket();
+  loadConfig();
+  pullTags();
+  refreshTcpStatus();
+}
+
+bootstrap();
 </script>
 </body>
 </html>

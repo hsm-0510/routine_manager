@@ -4,23 +4,34 @@ from pathlib import Path
 
 class ModelRunner:
     def __init__(self, model_path, encoder_path):
+        # Paths only - the pickle is NOT loaded here. Unpickling the
+        # XGBClassifier requires the xgboost/sklearn packages, which are not
+        # bundled into the frozen EXE. Loading is deferred until predict() so
+        # ML stays available in source mode and never breaks startup.
+        self.model_path = model_path
+        self.encoder_path = encoder_path
+        self.model = None
+        self.encoder = None
 
-        # Load model
-        self.model = joblib.load(model_path)
-
-        # Load encoder
-        self.encoder = joblib.load(encoder_path)
+    def _ensure_loaded(self):
+        if self.model is None:
+            self.model = joblib.load(self.model_path)
+        if self.encoder is None:
+            self.encoder = joblib.load(self.encoder_path)
+        return self.model, self.encoder
 
     def predict(self, X):
-        
+        # First real inference call triggers the (optional) model load.
+        model, encoder = self._ensure_loaded()
+
         X = X.astype(float)
 
-        pred_class = self.model.predict(X)[0]
-        label = self.encoder.inverse_transform([pred_class])[0]
+        pred_class = model.predict(X)[0]
+        label = encoder.inverse_transform([pred_class])[0]
 
-        probs = self.model.predict_proba(X)[0]
+        probs = model.predict_proba(X)[0]
 
-        classes = self.encoder.classes_
+        classes = encoder.classes_
 
         probs_dict = dict(zip(classes, probs))
         

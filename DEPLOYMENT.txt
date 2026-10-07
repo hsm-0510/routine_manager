@@ -1,0 +1,33 @@
+WEIGHBRIDGE DEPLOYMENT PACKAGE
+===============================
+
+FILES TO COPY TO NEW PC (NO CODE CHANGES NEEDED):
+
+1. dist\WeighbridgeSystem.exe (122 MB) - REQUIRED
+   This is the complete application (launcher + routine manager + dashboard).
+   All dependencies, configs, DB are bundled inside.
+
+2. cloudflared.exe (optional, 53 MB) - ONLY FOR REMOTE PHONE ACCESS
+   Location: C:\Users\a\AppData\Local\Temp\opencode\cloudflared.exe
+   If you don't need remote access from outside LAN, skip this.
+
+3. config\ folder (optional) - FOR SITE-SPECIFIC PARAMETER CHANGES
+   Copy the entire config folder NEXT TO WeighbridgeSystem.exe
+   (e.g. C:\Weighbridge\config\ and C:\Weighbridge\WeighbridgeSystem.exe)
+   The app will now prefer external config files if they exist, so you can
+   edit system_config.json, weighbridgeConfig.json, etc. without rebuilding.
+
+   Config files included in exe as fallback if external folder not present.
+
+4. dashboard\.env (optional) - FOR PHONE ACCESS AUTHENTICATION
+   Create dashboard\.env NEXT TO the exe location, or in the same folder
+   as exe with content:
+   DASHBOARD_AUTH_TOKEN=your_token_here (>=16 chars)
+   DASHBOARD_HOST=127.0.0.1
+   DASHBOARD_PORT=8000
+
+RUNNING:
+- Double-click WeighbridgeSystem.exe
+- Dashboard: http://127.0.0.1:8000 (local only by default)
+- For remote access: run cloudflared tunnel --url http://127.0.0.1:8000
+  on the target PC and open the https://*.trycloudflare.com URL on phone

@@ -3,6 +3,7 @@ import io
 import json
 import os
 import sqlite3
+import sys
 import threading
 import time
 from datetime import datetime
@@ -10,18 +11,56 @@ from contextlib import asynccontextmanager
 
 import pandas as pd
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from opcua import Client, ua
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 
-with open(os.path.join(PROJECT_ROOT, "config/system_config.json")) as f:
+# main.py launches this file as a script (python dashboard/app.py), so the
+# project root is not on sys.path yet and "dashboard.config" would not resolve.
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from dashboard.config import SETTINGS
+from dashboard.security import (
+    LOGIN_THROTTLE,
+    SESSION_COOKIE,
+    SecurityHeadersMiddleware,
+    clear_session_cookies,
+    client_id_for,
+    cookies_must_be_secure,
+    require_auth,
+    require_write_auth,
+    revoke_session,
+    session_is_valid,
+    set_session_cookies,
+    token_matches,
+    websocket_authorized,
+)
+
+# Refuse to start in a configuration that would leave the OPC-UA write proxy
+# reachable without a password.
+SETTINGS.validate()
+
+def _get_config_path(name):
+    # Prefer external config folder next to exe or in CWD
+    candidates = []
+    if getattr(sys, 'frozen', False):
+        candidates.append(os.path.join(os.path.dirname(sys.executable), 'config', name))
+    candidates.append(os.path.join(os.getcwd(), 'config', name))
+    candidates.append(os.path.join(PROJECT_ROOT, 'config', name))
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return os.path.join(PROJECT_ROOT, 'config', name)
+
+with open(_get_config_path('system_config.json')) as f:
     SYSTEM_CONFIG = json.load(f)
 
-with open(os.path.join(PROJECT_ROOT, "config/weighbridgeConfig.json")) as f:
+with open(_get_config_path('weighbridgeConfig.json')) as f:
     WEIGHBRIDGE_CONFIG = json.load(f)
 
 OPC_CFG = SYSTEM_CONFIG["opc_server"][0]
@@ -39,6 +78,21 @@ TCP_STATUS_PATH = os.path.join(PROJECT_ROOT, "dashboard", "tcp_status.json")
 # TCP_BEACON_INTERVAL seconds; a newer gap means the writer died.
 TCP_BEACON_INTERVAL = 2.0
 TCP_STATUS_STALE_SECONDS = TCP_BEACON_INTERVAL * 4
+
+# Only tags declared in config/weighbridgeConfig.json may be written. Without
+# this the {category}/{tag} path is handed straight to node.set_value(), so any
+# client that can reach the API could address an arbitrary node in the OPC
+# tree. The allowlist is derived from the same config the UI is built from.
+WRITE_ALLOWLIST = {
+    category["name"]: {tag["name"] for tag in category["tags"]}
+    for category in WEIGHBRIDGE_CONFIG["categories"]
+}
+MAX_WRITE_VALUE_LENGTH = 64
+MAX_WEIGHMENT_ROWS = 500
+# A client that stops reading its socket must not be able to stall the
+# broadcast loop and freeze live data for every other viewer.
+WS_SEND_TIMEOUT = 5.0
+SQLITE_TIMEOUT = 5.0
 
 class OPCClient:
     def __init__(self):
@@ -212,13 +266,17 @@ async def _broadcast(data):
         tcp_stale = WAVESHARE_TCP_STATUS["stale"]
     for ws in ws_clients:
         try:
-            await ws.send_json({
-                "type": "update",
-                "data": data,
-                "waveshareTcp": tcp_connected,
-                "waveshareTcpStale": tcp_stale,
-            })
+            await asyncio.wait_for(
+                ws.send_json({
+                    "type": "update",
+                    "data": data,
+                    "waveshareTcp": tcp_connected,
+                    "waveshareTcpStale": tcp_stale,
+                }),
+                timeout=WS_SEND_TIMEOUT,
+            )
         except Exception:
+            # Slow, half-open or gone: drop it rather than block the loop.
             dead.add(ws)
     ws_clients.difference_update(dead)
 
@@ -227,7 +285,7 @@ def get_weighments(limit=20):
     if not os.path.exists(DB_PATH):
         return []
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=SQLITE_TIMEOUT)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute(
@@ -256,45 +314,124 @@ async def lifespan(app: FastAPI):
     opc.disconnect()
 
 
-app = FastAPI(title="Weighbridge Dashboard", lifespan=lifespan)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+app = FastAPI(
+    title="Weighbridge Dashboard",
+    lifespan=lifespan,
+    # These publish the entire API surface, including the OPC-UA write
+    # endpoint, so they stay off unless explicitly enabled.
+    docs_url="/docs" if SETTINGS.enable_docs else None,
+    redoc_url="/redoc" if SETTINGS.enable_docs else None,
+    openapi_url="/openapi.json" if SETTINGS.enable_docs else None,
 )
+
+# Cross-origin access is off by default. Through Cloudflare Tunnel everything
+# is same-origin, and a wildcard would let any site open in an operator's
+# browser drive an OPC-UA write proxy. Set DASHBOARD_ALLOWED_ORIGINS only if a
+# separate front-end genuinely needs it.
+if SETTINGS.allowed_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=SETTINGS.allowed_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST"],
+        allow_headers=["Content-Type", "Authorization", "X-API-Token", "X-CSRF-Token"],
+    )
+
+# Added last, therefore outermost: headers reach CORS preflights too.
+app.add_middleware(SecurityHeadersMiddleware, csp=SETTINGS.csp)
 
 
 @app.get("/")
 async def index():
+    # Public on purpose: the login form has to load before a session exists.
     with open(os.path.join(SCRIPT_DIR, "templates", "index.html")) as f:
         return HTMLResponse(f.read())
 
 
-@app.get("/api/config")
+async def _read_json(request):
+    """Tolerant body reader: a malformed login must not become a 500."""
+    try:
+        payload = await request.json()
+    except Exception:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+@app.get("/healthz")
+async def healthz():
+    """Liveness probe for Cloudflare / the service manager.
+
+    Deliberately reveals nothing about the weighbridge, so it needs no token.
+    """
+    return {"status": "ok"}
+
+
+@app.get("/api/auth/status")
+async def auth_status(request: Request):
+    return {
+        "authRequired": SETTINGS.auth_required,
+        "authenticated": session_is_valid(request),
+    }
+
+
+@app.post("/api/auth/login")
+async def login(request: Request):
+    client_id = client_id_for(request)
+    retry_after = LOGIN_THROTTLE.retry_after(client_id)
+    if retry_after:
+        return JSONResponse(
+            {"detail": "Too many failed login attempts. Try again later."},
+            status_code=429,
+            headers={"Retry-After": str(retry_after)},
+        )
+
+    payload = await _read_json(request)
+    supplied = payload.get("token", "") if payload else ""
+    if not isinstance(supplied, str) or not token_matches(supplied):
+        LOGIN_THROTTLE.record_failure(client_id)
+        # Same message and status whether the token is wrong or missing, so the
+        # endpoint cannot be used to probe for valid tokens.
+        raise HTTPException(401, "Invalid credentials")
+
+    LOGIN_THROTTLE.reset(client_id)
+    response = JSONResponse({"status": "ok", "authRequired": SETTINGS.auth_required})
+    set_session_cookies(response, cookies_must_be_secure(request))
+    return response
+
+
+@app.post("/api/auth/logout")
+async def logout(request: Request):
+    # Unauthenticated and idempotent so it also clears an already-dead cookie,
+    # but the presented session is revoked server-side: deleting the cookie in
+    # the browser must be enough to actually end the session.
+    revoke_session(request.cookies.get(SESSION_COOKIE))
+    response = JSONResponse({"status": "ok"})
+    clear_session_cookies(response)
+    return response
+
+
+@app.get("/api/config", dependencies=[Depends(require_auth)])
 async def get_config():
     return WEIGHBRIDGE_CONFIG
 
 
-@app.get("/api/tags")
+@app.get("/api/tags", dependencies=[Depends(require_auth)])
 async def get_tags():
     with tag_lock:
         return {k: dict(v) for k, v in tag_values.items()}
 
 
-@app.get("/api/weighments")
-async def get_weighments_api(limit: int = 50):
+@app.get("/api/weighments", dependencies=[Depends(require_auth)])
+async def get_weighments_api(limit: int = Query(50, ge=1, le=MAX_WEIGHMENT_ROWS)):
     return get_weighments(limit)
 
 
-@app.get("/api/tcp/status")
+@app.get("/api/tcp/status", dependencies=[Depends(require_auth)])
 async def get_tcp_status_api():
     return get_tcp_status()
 
 
-@app.get("/api/weighments/download")
+@app.get("/api/weighments/download", dependencies=[Depends(require_auth)])
 async def download_weighments():
     """Export weighments. Read-only: retention is handled by the scheduled
     job in localDB.retention_worker, never as a side effect of a GET."""
@@ -302,7 +439,7 @@ async def download_weighments():
     df = pd.DataFrame()
     if os.path.exists(DB_PATH):
         try:
-            conn = sqlite3.connect(DB_PATH)
+            conn = sqlite3.connect(DB_PATH, timeout=SQLITE_TIMEOUT)
             df = pd.read_sql_query("SELECT * FROM weighments ORDER BY id DESC", conn)
             conn.close()
         except Exception as e:
@@ -332,8 +469,26 @@ async def download_weighments():
     )
 
 
-@app.post("/api/tags/{category}/{tag}")
-async def write_tag(category: str, tag: str, value: str):
+@app.post("/api/tags/{category}/{tag}", dependencies=[Depends(require_write_auth)])
+async def write_tag(
+    category: str,
+    tag: str,
+    value: str = Query(..., description="New value to write to the OPC-UA tag"),
+):
+    """Write a single OPC-UA tag.
+
+    This is the one endpoint that changes plant behaviour, so it requires a
+    session (plus CSRF proof), and the target must be a tag declared in
+    config/weighbridgeConfig.json. The UI sends the value as a query
+    parameter (?value=...); declaring it as Query(...) keeps that contract
+    instead of silently 422-ing on a missing JSON body.
+    """
+    allowed_tags = WRITE_ALLOWLIST.get(category)
+    if not allowed_tags or tag not in allowed_tags:
+        raise HTTPException(404, f"Unknown tag {category}.{tag}")
+    if len(value) > MAX_WRITE_VALUE_LENGTH:
+        raise HTTPException(422, f"Value exceeds {MAX_WRITE_VALUE_LENGTH} characters")
+
     opc = getattr(app.state, "opc", None)
     if not opc or not opc.connected:
         raise HTTPException(503, "OPC UA not connected")
@@ -345,6 +500,9 @@ async def write_tag(category: str, tag: str, value: str):
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    # Authorise before accept(); a browser cannot set headers on a WebSocket,
+    # so this normally resolves via the same-origin session cookie.
+    websocket_authorized(websocket)
     await websocket.accept()
     ws_clients.add(websocket)
     with tag_lock:
@@ -352,21 +510,47 @@ async def websocket_endpoint(websocket: WebSocket):
     with tcp_status_lock:
         tcp_connected = WAVESHARE_TCP_STATUS["connected"]
         tcp_stale = WAVESHARE_TCP_STATUS["stale"]
-    await websocket.send_json({
-        "type": "init",
-        "data": snapshot,
-        "waveshareTcp": tcp_connected,
-        "waveshareTcpStale": tcp_stale,
-    })
+    try:
+        await websocket.send_json({
+            "type": "init",
+            "data": snapshot,
+            "waveshareTcp": tcp_connected,
+            "waveshareTcpStale": tcp_stale,
+        })
+    except Exception:
+        ws_clients.discard(websocket)
+        return
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        ws_clients.discard(websocket)
+        pass
     except Exception:
+        pass
+    finally:
         ws_clients.discard(websocket)
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    print(SETTINGS.describe())
+    print(
+        f"[STARTUP] Dashboard on {SETTINGS.public_origin()}"
+        f" | local: http://localhost:{SETTINGS.port}"
+    )
+    if SETTINGS.auth_required:
+        print(
+            "[STARTUP] Open the dashboard and enter the DASHBOARD_AUTH_TOKEN "
+            "when prompted. OPC-UA remains local-only on port 5501."
+        )
+    uvicorn.run(
+        app,
+        host=SETTINGS.host,
+        port=SETTINGS.port,
+        # cloudflared connects from loopback and sets X-Forwarded-Proto, which
+        # is how request.url.scheme (and therefore Secure cookies and HSTS)
+        # knows the public request was HTTPS.
+        proxy_headers=True,
+        forwarded_allow_ips=",".join(SETTINGS.trusted_proxy_ips),
+        server_header=False,
+    )

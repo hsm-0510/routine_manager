@@ -5,3 +5,10 @@ __pycache__/
 # Runtime beacon written by the TCP connection manager, read by the dashboard
 /dashboard/tcp_status.json
 /dashboard/tcp_status.json.tmp
+
+# Real dashboard credentials. Copy .env.example to .env and fill it in locally;
+/# never commit the filled-in file.
+/dashboard/.env
+/build
+/dist
+/release

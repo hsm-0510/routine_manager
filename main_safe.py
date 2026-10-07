@@ -38,32 +38,24 @@ print("=" * 60)
 # Better: detect frozen and run both modules in threads (single process) - simpler and safe for exe.
 
 if IS_FROZEN:
-    # Run both subsystems in threads of this single process (never spawn the
-    # exe again - that is a fork bomb).
-    if BASE not in sys.path:
-        sys.path.insert(0, BASE)
-
+    # Run in same process but in threads for safety
+    import importlib
     def run_main():
-        import runpy
-        import traceback
         try:
-            # EXECUTE the module as __main__: its entry point lives under
-            # `if __name__ == "__main__":` - a plain import never starts the
-            # OPC client, the Waveshare TCP client or the tcp_status beacon.
-            runpy.run_module("tests.test7_sap_opc", run_name="__main__")
-        except BaseException:
-            print("[MAIN ERR] routine manager failed:")
-            traceback.print_exc()
-
+            import tests.test7_sap_opc  # blocks
+        except Exception as e:
+            print(f"[MAIN ERR] {e}")
     def run_dash():
-        import traceback
         try:
+            import sys as _sys
+            dash_path = os.path.join(BASE, "dashboard")
+            if dash_path not in _sys.path:
+                _sys.path.insert(0, dash_path)
             import uvicorn
             from dashboard import app as dash_app
             uvicorn.run(dash_app.app, host="127.0.0.1", port=8000, log_level="info")
-        except BaseException:
-            print("[DASH ERR] dashboard failed:")
-            traceback.print_exc()
+        except Exception as e:
+            print(f"[DASH ERR] {e}")
     threading.Thread(target=run_main, daemon=True).start()
     threading.Thread(target=run_dash, daemon=True).start()
     try:
