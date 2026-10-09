@@ -3,8 +3,8 @@ from opcua import Client, ua
 
 
 class PSOWeighbridgeClient:
-    def __init__(self, endpoint, namespace_uri="urn:pso:smart-weighbridge",
-                 server_object_name="PSO Smart Weighbridge"):
+    def __init__(self, endpoint, namespace_uri="urn:freeopcua:python:server",
+                 server_object_name="PSO UA Gateway"):
         self.endpoint = endpoint
         self.namespace_uri = namespace_uri
         self.server_object_name = server_object_name
@@ -23,18 +23,22 @@ class PSOWeighbridgeClient:
         self.client.disconnect()
         print("Disconnected")
 
+    # def get_tag_node(self, category_name, tag_name):
+    #     """
+    #     Builds browse path like:
+    #     Objects -> PSO Smart Weighbridge -> Entrance_XK3190_     DS8 -> gross_weight_WB1
+    #     """
+    #     path = [
+    #         "0:Objects",
+    #         f"{self.idx}:WEIGHBRIDGE",
+    #         f"{self.idx}:{category_name}",
+    #         f"{self.idx}:{tag_name}",
+    #     ]
+    #     return self.root.get_child(path)
+    
     def get_tag_node(self, category_name, tag_name):
-        """
-        Builds browse path like:
-        Objects -> PSO Smart Weighbridge -> Entrance_XK3190_     DS8 -> gross_weight_WB1
-        """
-        path = [
-            "0:Objects",
-            f"{self.idx}:{self.server_object_name}",
-            f"{self.idx}:{category_name}",
-            f"{self.idx}:{tag_name}",
-        ]
-        return self.root.get_child(path)
+        node_id = f"ns=2;s=WEIGHBRIDGE/{category_name}/{tag_name}"
+        return self.client.get_node(node_id)
 
     def read_tag(self, category_name, tag_name, type):
         old_value = ""

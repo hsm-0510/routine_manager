@@ -21,7 +21,7 @@ def scheduler1(opc, port, baudrate, timeout, idNum):
     
     while True:
         try:
-            start = time.time()
+            start = time.perf_counter()
             if idNum == 0:
                 # Response Record for Device 1
                 serial_client.record_serial_response(ser, "device1", opc)
@@ -30,8 +30,10 @@ def scheduler1(opc, port, baudrate, timeout, idNum):
                 serial_client.record_serial_response(ser, "device2", opc)
             
             # Loop Delay
-            elapsed = time.time() - start
-            time.sleep(0, CYCLE_TIME - elapsed)
+            elapsed = time.perf_counter() - start
+            remaining = CYCLE_TIME - elapsed
+            if remaining > 0:
+                time.sleep(remaining)
             
         except Exception as e:
             print(f"[SCHEDULER 1 ERROR: {e}]")
@@ -102,7 +104,7 @@ def scheduler2(opc, port1, baudrate1, timeout1, port2, baudrate2, timeout2):
     
     while True:
         try:
-            start = time.time()
+            start = time.perf_counter()
             # Response Record for Device 1
             serial_client.record_serial_response(ser1, "device1", opc)
             
@@ -110,8 +112,10 @@ def scheduler2(opc, port1, baudrate1, timeout1, port2, baudrate2, timeout2):
             serial_client.record_serial_response(ser2, "device2", opc)
             
             # Loop Delay
-            elapsed = time.time() - start
-            time.sleep(0, CYCLE_TIME - elapsed)
+            elapsed = time.perf_counter() - start
+            remaining = CYCLE_TIME - elapsed
+            if remaining > 0:
+                time.sleep(remaining)
         
         except Exception as e:
             print(f"[SCHEDULER 2 ERROR: {e}]")

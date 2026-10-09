@@ -56,27 +56,27 @@ def update_opc_elements(opc):
     #                                 opc.read_tag("SAP_DATA", key))
     changed = False
 
-    for key in state_manager.misc_tags["SAP_DATA"]:
-        if not key.startswith("SAP_"):
-            continue
+    # for key in state_manager.misc_tags["SAP_DATA"]:
+    #     if not key.startswith("SAP_"):
+    #         continue
 
-        new_val = opc.read_tag("SAP_DATA", key, "string")
-        print(f"SAP_DATA: {key}: {opc.read_tag("SAP_DATA", key, "string")}")
-        old_val = state_manager.misc_tags["SAP_DATA"].get(key)
+    #     new_val = opc.read_tag("SAP_DATA", key, "string")
+    #     print(f"SAP_DATA: {key}: {opc.read_tag("SAP_DATA", key, "string")}")
+    #     old_val = state_manager.misc_tags["SAP_DATA"].get(key)
 
-        if is_valid(new_val) and new_val != old_val:
-            state_manager.state_manager_update("SAP_DATA", key, new_val)
-            changed = True
+    #     if is_valid(new_val) and new_val != old_val:
+    #         state_manager.state_manager_update("SAP_DATA", key, new_val)
+    #         changed = True
 
-    print(f"[SPECIAL PRINT: SAP_batch_start_time: {opc.read_tag("SAP_DATA", "SAP_batch_start_time", "string")}]")
-    print(f"[SPECIAL PRINT: SAP_batch_end_time: {opc.read_tag("SAP_DATA", "SAP_batch_end_time", "string")}]")
-    print(f"[SPECIAL PRINT: SAP_compartment_name: {opc.read_tag("SAP_DATA", "SAP_compartment_name", "string")}]")
-    print(f"[SPECIAL PRINT: SAP_expected_net_weight: {opc.read_tag("SAP_DATA", "SAP_expected_net_weight", "string")}]")
-    print(f"[SPECIAL PRINT: SAP_trailer_net_weight: {opc.read_tag("SAP_DATA", "SAP_trailer_net_weight", "string")}]")
+    # print(f"[SPECIAL PRINT: SAP_batch_start_time: {opc.read_tag("SAP_DATA", "SAP_batch_start_time", "string")}]")
+    # print(f"[SPECIAL PRINT: SAP_batch_end_time: {opc.read_tag("SAP_DATA", "SAP_batch_end_time", "string")}]")
+    # print(f"[SPECIAL PRINT: SAP_compartment_name: {opc.read_tag("SAP_DATA", "SAP_compartment_name", "string")}]")
+    # print(f"[SPECIAL PRINT: SAP_expected_net_weight: {opc.read_tag("SAP_DATA", "SAP_expected_net_weight", "string")}]")
+    # print(f"[SPECIAL PRINT: SAP_trailer_net_weight: {opc.read_tag("SAP_DATA", "SAP_trailer_net_weight", "string")}]")
     
-    # 🔥 ONLY mark update when real change happened
-    if changed:
-        state_manager.mark_sap_update()
+    # # 🔥 ONLY mark update when real change happened
+    # if changed:
+    #     state_manager.mark_sap_update()
     
     # Update TCP_Payload (WAVESHARE STATUSES)
     tcp_client.update_payload(state_manager.tcp_payload,

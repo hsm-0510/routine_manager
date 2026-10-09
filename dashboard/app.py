@@ -119,14 +119,17 @@ class OPCClient:
             pass
         self.connected = False
 
-    def get_tag_node(self, category, tag):
-        path = [
-            "0:Objects",
-            f"{self.idx}:{OPC_CFG['serverObjectName']}",
-            f"{self.idx}:{category}",
-            f"{self.idx}:{tag}",
-        ]
-        return self.root.get_child(path)
+    # def get_tag_node(self, category, tag):
+    #     path = [
+    #         "0:Objects",
+    #         f"{self.idx}:{OPC_CFG['serverObjectName']}",
+    #         f"{self.idx}:{category}",
+    #         f"{self.idx}:{tag}",
+    #     ]
+    #     return self.root.get_child(path)
+    def get_tag_node(self, category_name, tag_name):
+            node_id = f"ns=2;s=WEIGHBRIDGE/{category_name}/{tag_name}"
+            return self.client.get_node(node_id)
 
     def read_tag(self, category, tag):
         try:
