@@ -73,7 +73,7 @@ class PSOWeighbridgeClient:
         else:
             node.set_value(value)
 
-        print(f"WROTE {category_name}.{tag_name} = {value}")
+        print(f"WROTEs {category_name}.{tag_name} = {value}")
 
     def browse_category(self, category_name):
         category_node = self.root.get_child([
